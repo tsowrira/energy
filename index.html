@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0a0908">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Energy">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Energy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --bg:#0a0908; --card:#131110; --line:rgba(255,241,220,.08);
+ --txt:#f3ece1; --fade:rgba(243,236,225,.62); --dim:rgba(243,236,225,.3);
+ --a:#f0b35a; --a-dim:rgba(240,179,90,.18);
+ --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 'Inter',sans-serif;-webkit-font-smoothing:antialiased;min-height:100%}
+body{padding:calc(var(--sat) + 24px) 20px calc(var(--sab) + 40px);max-width:460px;margin:0 auto;overscroll-behavior-y:none}
+h1{font:700 34px/1 'Playfair Display',serif;letter-spacing:-.02em;margin:0}
+.eyebrow{font:600 11px/1 'Inter',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fade)}
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
+.sync{width:8px;height:8px;border-radius:50%;background:var(--dim);margin-bottom:6px;transition:background .3s}
+.sync.on{background:var(--a)} .sync.wait{background:var(--a);opacity:.45} .sync.err{background:#e5574f}
+.sync.off{background:transparent;box-shadow:inset 0 0 0 1.5px var(--dim)}
+.q{margin:0 0 10px;font-size:15px;color:var(--fade)}
+.big{font:700 72px/1 'Playfair Display',serif;color:var(--a);letter-spacing:-.03em;min-height:72px;margin:6px 0 14px;transition:opacity .2s}
+.big.none{color:var(--dim)}
+.big small{font:500 13px/1 'Inter',sans-serif;color:var(--fade);letter-spacing:.1em;text-transform:uppercase;margin-left:10px;vertical-align:middle}
+.dots{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin-bottom:6px;touch-action:none}
+.dot{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--line);background:var(--card);position:relative;transition:transform .12s,background .12s,border-color .12s}
+.dot.lit{background:var(--a);border-color:var(--a)}
+.dot.pick{transform:scale(1.25);box-shadow:0 0 0 4px var(--a-dim)}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:28px}
+label.f{display:block;margin-bottom:18px}
+label.f span{display:block;font-size:13px;color:var(--fade);margin-bottom:6px}
+textarea,input[type=text],input[type=password]{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--txt);font:inherit;font-size:16px;padding:12px 14px;outline:none;resize:none}
+textarea:focus,input:focus{border-color:rgba(240,179,90,.5)}
+textarea{min-height:48px;line-height:1.4}
+.chips{display:flex;gap:8px;margin:4px 0 26px}
+.chip{flex:1;border:1px solid var(--line);background:var(--card);color:var(--fade);border-radius:999px;padding:10px 0;font:500 14px 'Inter',sans-serif;text-align:center;transition:all .12s}
+.chip.on{background:var(--a-dim);border-color:rgba(240,179,90,.5);color:var(--txt)}
+.save{width:100%;border:0;border-radius:14px;padding:16px;background:var(--a);color:#1a1206;font:600 16px 'Inter',sans-serif;letter-spacing:.01em;transition:transform .1s,opacity .2s}
+.save:active{transform:scale(.985)} .save[disabled]{opacity:.35}
+.tags{margin:14px 0 0;text-align:center}
+.tags input{text-align:center;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:6px 0;font-size:14px;color:var(--fade)}
+.tags input::placeholder{color:var(--dim)}
+.week{margin-top:48px;padding-top:28px;border-top:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:36px repeat(7,1fr);gap:6px 4px;align-items:center;margin-top:16px}
+.grid .lab{font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.grid .dn{text-align:center;font-size:11px;color:var(--dim)}
+.grid .dn.today{color:var(--a)}
+.cell{aspect-ratio:1;border-radius:50%;background:var(--card);border:1px solid var(--line);margin:0 auto;width:min(100%,28px);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#1a1206}
+.cell.has{border-color:transparent}
+.note{min-height:22px;font-size:13px;color:var(--fade);margin-top:14px;line-height:1.45}
+.note b{color:var(--txt);font-weight:600}
+.nav{display:flex;justify-content:space-between;align-items:center}
+.nav button{background:none;border:0;color:var(--fade);font:500 13px 'Inter',sans-serif;padding:8px 4px}
+.nav button:disabled{color:var(--dim)}
+details{margin-top:40px;border-top:1px solid var(--line);padding-top:16px}
+summary{list-style:none;font-size:13px;color:var(--fade);display:flex;justify-content:space-between;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary em{font-style:normal;color:var(--dim)}
+.gh p{font-size:13px;color:var(--fade);line-height:1.5;margin:14px 0}
+.gh label{display:block;font-size:12px;color:var(--fade);margin:10px 0}
+.gh input{margin-top:5px;font-size:14px}
+.row{display:flex;gap:8px;margin-top:14px}
+.row button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 0;font:500 14px 'Inter',sans-serif}
+.gh .st{font-size:12px;color:var(--dim);margin-top:12px;min-height:16px}
+.toast{position:fixed;left:50%;bottom:calc(var(--sab) + 24px);transform:translate(-50%,20px);background:var(--txt);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+ <div><div class="eyebrow" id="slot">—</div><h1 id="date">Energy</h1></div>
+ <div class="sync off" id="syncDot"></div>
+</div>
+
+<p class="q">How much is in the tank right now?</p>
+<div class="big none" id="big">–</div>
+<div class="dots" id="dots" role="slider" aria-valuemin="0" aria-valuemax="10" aria-label="Energy"></div>
+<div class="ends"><span>empty</span><span>full</span></div>
+
+<label class="f"><span>What drained it in the last few hours?</span><textarea id="drain" rows="1" enterkeyhint="done"></textarea></label>
+<label class="f"><span>What added to it?</span><textarea id="add" rows="1" enterkeyhint="done"></textarea></label>
+
+<p class="q" style="margin-bottom:10px">Anything your body is asking for?</p>
+<div class="chips">
+ <div class="chip" data-k="water">water</div>
+ <div class="chip" data-k="bathroom">bathroom</div>
+ <div class="chip" data-k="food">food</div>
+</div>
+
+<button class="save" id="save" disabled>Save</button>
+<div class="tags"><input id="tags" type="text" placeholder="tags · optional" autocapitalize="off" autocorrect="off"></div>
+
+<div class="week">
+ <div class="nav"><button id="prev">‹ earlier</button><div class="eyebrow" id="wk"></div><button id="next" disabled>later ›</button></div>
+ <div class="grid" id="grid"></div>
+ <div class="note" id="note"></div>
+</div>
+
+<details id="ghBox" class="gh">
+ <summary>Sync <em id="ghState">not connected</em></summary>
+ <p>There is no server. Entries live in this browser and in a private repo you own. Make a <strong>fine-grained</strong> token with <strong>Contents: read and write</strong> on that one repo and nothing else.</p>
+ <label>Repo<input id="ghRepo" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="owner/name"></label>
+ <label>Token<input id="ghTok" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+ <div class="row"><button id="ghSave">Connect</button><button id="ghNow">Sync now</button><button id="ghOff">Forget</button></div>
+ <div class="row"><button id="exportBtn">Export file</button></div>
+ <div class="st" id="ghNote"></div>
+</details>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── storage ──────────────────────────────────────────────────────────
+var store = { get:function(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+ set:function(k,v){ try { localStorage.setItem(k,v); } catch(e){} }, del:function(k){ try { localStorage.removeItem(k); } catch(e){} } };
+function readLog(){ try { var a = JSON.parse(store.get('en-log') || '[]'); return Array.isArray(a) ? a : []; } catch(e){ return []; } }
+function writeLog(a){ a.sort(function(x,y){ return x.t < y.t ? -1 : 1; }); store.set('en-log', JSON.stringify(a)); }
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function localISO(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+function dayOf(t){ return t.slice(0,10); }
+function todayStr(){ return localISO(new Date()).slice(0,10); }
+
+// Slot comes from the clock, never from a picker.
+var SLOTS = ['morning','midday','afternoon','evening'];
+function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 11 ? 0 : h < 14.5 ? 1 : h < 19 ? 2 : 3; }
+
+var _toastT;
+function toast(m){ var t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_toastT); _toastT = setTimeout(function(){ t.classList.remove('show'); }, 2200); }
+
+// ── header ───────────────────────────────────────────────────────────
+function paintHead(){
+ var d = new Date();
+ document.getElementById('slot').textContent = SLOTS[slotFor(d)];
+ document.getElementById('date').textContent = d.toLocaleDateString(undefined, { weekday:'long' });
+}
+
+// ── slider ───────────────────────────────────────────────────────────
+var val = null, dots = document.getElementById('dots');
+for (var i = 0; i <= 10; i++){ var el = document.createElement('div'); el.className = 'dot'; el.dataset.v = i; dots.appendChild(el); }
+function setVal(v, quiet){
+ v = Math.max(0, Math.min(10, v));
+ if (v === val) return; val = v;
+ Array.prototype.forEach.call(dots.children, function(el){ var n = +el.dataset.v; el.classList.toggle('lit', n <= v); el.classList.toggle('pick', n === v); });
+ var big = document.getElementById('big'); big.textContent = v; big.classList.remove('none');
+ dots.setAttribute('aria-valuenow', v);
+ document.getElementById('save').disabled = false;
+ if (!quiet && navigator.vibrate) navigator.vibrate(4);
+}
+function onPt(e){ var x = (e.touches ? e.touches[0] : e).clientX; var r = dots.getBoundingClientRect(); setVal(Math.floor((x - r.left) / (r.width / 11))); }
+dots.addEventListener('pointerdown', function(e){ dots.setPointerCapture(e.pointerId); onPt(e); });
+dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); });
+
+// ── chips ────────────────────────────────────────────────────────────
+Array.prototype.forEach.call(document.querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); }); });
+
+// ── save ─────────────────────────────────────────────────────────────
+document.getElementById('save').addEventListener('click', function(){
+ if (val === null) return;
+ var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], e:val };
+ var dr = document.getElementById('drain').value.trim(), ad = document.getElementById('add').value.trim(), tg = document.getElementById('tags').value.trim();
+ if (dr) e.drain = dr; if (ad) e.add = ad; if (tg) e.tags = tg.split(/[,\s]+/).filter(Boolean);
+ var body = []; Array.prototype.forEach.call(document.querySelectorAll('.chip.on'), function(c){ body.push(c.dataset.k); });
+ if (body.length) e.body = body;
+ var a = readLog(); a.push(e); writeLog(a);
+ resetForm(); paintWeek(); toast('Saved');
+ store.set('en-dirty', '1'); ghPush(1);
+});
+function resetForm(){
+ val = null; Array.prototype.forEach.call(dots.children, function(el){ el.className = 'dot'; });
+ var big = document.getElementById('big'); big.textContent = '–'; big.classList.add('none');
+ ['drain','add','tags'].forEach(function(id){ document.getElementById(id).value = ''; });
+ Array.prototype.forEach.call(document.querySelectorAll('.chip.on'), function(c){ c.classList.remove('on'); });
+ document.getElementById('save').disabled = true;
+}
+
+// ── week grid ────────────────────────────────────────────────────────
+var wkOff = 0;
+function monday(d){ var x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function shade(v){ var t = v / 10; return 'rgba(240,179,90,' + (0.12 + 0.88 * t).toFixed(2) + ')'; }
+function paintWeek(){
+ var m = monday(new Date()); m.setDate(m.getDate() + wkOff * 7);
+ var days = []; for (var i = 0; i < 7; i++){ var d = new Date(m); d.setDate(m.getDate() + i); days.push(localISO(d).slice(0,10)); }
+ var log = readLog(), by = {};
+ log.forEach(function(e){ var k = dayOf(e.t) + '|' + e.slot; if (!by[k] || by[k].t < e.t) by[k] = e; });
+ var g = document.getElementById('grid'), tod = todayStr(), h = '<div></div>';
+ days.forEach(function(ds){ var d = new Date(ds + 'T12:00:00'); h += '<div class="dn' + (ds === tod ? ' today' : '') + '">' + 'MTWTFSS'[(d.getDay()+6)%7] + '</div>'; });
+ SLOTS.forEach(function(s){
+  h += '<div class="lab">' + s.slice(0,3) + '</div>';
+  days.forEach(function(ds){ var e = by[ds + '|' + s];
+   h += e ? '<div class="cell has" data-k="' + ds + '|' + s + '" style="background:' + shade(e.e) + '">' + (e.e >= 5 ? e.e : '') + '</div>' : '<div class="cell"></div>'; });
+ });
+ g.innerHTML = h;
+ var e0 = new Date(days[0] + 'T12:00:00'), e6 = new Date(days[6] + 'T12:00:00'), f = { month:'short', day:'numeric' };
+ document.getElementById('wk').textContent = wkOff === 0 ? 'this week' : e0.toLocaleDateString(undefined, f) + ' – ' + e6.toLocaleDateString(undefined, f);
+ document.getElementById('next').disabled = wkOff >= 0;
+ document.getElementById('note').innerHTML = '';
+ Array.prototype.forEach.call(g.querySelectorAll('.cell.has'), function(c){ c.addEventListener('click', function(){ showNote(by[c.dataset.k]); }); });
+}
+function esc(s){ return String(s).replace(/[&<>]/g, function(ch){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;' }[ch]; }); }
+function showNote(e){
+ var d = new Date(e.t), p = [];
+ p.push('<b>' + e.e + '</b> · ' + d.toLocaleDateString(undefined, { weekday:'short' }) + ' ' + e.slot + ' · ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }));
+ if (e.drain) p.push('<b>drained</b> ' + esc(e.drain)); if (e.add) p.push('<b>added</b> ' + esc(e.add));
+ if (e.body) p.push('<b>body</b> ' + e.body.join(', ')); if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
+ document.getElementById('note').innerHTML = p.join('<br>');
+}
+document.getElementById('prev').addEventListener('click', function(){ wkOff--; paintWeek(); });
+document.getElementById('next').addEventListener('click', function(){ wkOff++; paintWeek(); });
+
+// ── export ───────────────────────────────────────────────────────────
+document.getElementById('exportBtn').addEventListener('click', function(){
+ var b = new Blob([JSON.stringify(readLog(), null, 1)], { type:'application/json' }), u = URL.createObjectURL(b), a = document.createElement('a');
+ a.href = u; a.download = 'energy-' + todayStr() + '.json'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 500);
+});
+
+// ── sync to a private GitHub repo ────────────────────────────────────
+// A static page has no server, so the token lives in this browser. Scope it to
+// Contents read+write on the log repo alone.
+var GH_API = 'https://api.github.com', FILE = 'log.json';
+function readGH(){ try { var c = JSON.parse(store.get('en-gh') || 'null'); return (c && c.repo && c.tok) ? c : null; } catch(e){ return null; } }
+function writeGH(o){ if (o) store.set('en-gh', JSON.stringify(o)); else store.del('en-gh'); }
+function ghHead(c){ return { 'Authorization':'Bearer ' + c.tok, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' }; }
+function ghUrl(c){ return GH_API + '/repos/' + c.repo + '/contents/' + FILE; }
+function b64enc(s){ var b = new TextEncoder().encode(s), o = ''; for (var i = 0; i < b.length; i += 0x8000) o += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(o); }
+function b64dec(s){ var bin = atob(String(s).replace(/\s/g, '')), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return new TextDecoder().decode(b); }
+function offline(e){ return e instanceof TypeError || !navigator.onLine; }
+function no404(c){ return 'Cannot see ' + c.repo + '. Check the name, and that the token was made for that repo only.'; }
+
+function paintGH(){
+ var c = readGH(), st = document.getElementById('ghState'), n = document.getElementById('ghNote'), r = document.getElementById('ghRepo');
+ if (c && document.activeElement !== r) r.value = c.repo;
+ var dot = document.getElementById('syncDot');
+ dot.className = 'sync ' + (!c ? 'off' : c.err ? 'err' : store.get('en-dirty') ? 'wait' : 'on');
+ if (!c){ st.textContent = 'not connected'; n.textContent = ''; return; }
+ if (c.err){ st.textContent = 'needs attention'; n.textContent = c.err; return; }
+ var ago = c.at ? Math.round((Date.now() - c.at) / 6e4) : null;
+ st.textContent = ago === null ? 'on' : ago < 1 ? 'just now' : ago < 60 ? ago + 'm ago' : Math.round(ago / 60) + 'h ago';
+ n.textContent = c.repo + '/' + FILE + (c.at ? ' · last write ' + new Date(c.at).toLocaleString() : '');
+}
+function ghErr(c, m){ c.err = m; writeGH(c); paintGH(); }
+
+// union by timestamp; nothing is ever overwritten
+function merge(remote){
+ var loc = readLog(), seen = {}, added = 0; loc.forEach(function(e){ seen[e.t] = 1; });
+ (Array.isArray(remote) ? remote : []).forEach(function(e){ if (e && e.t && !seen[e.t]){ loc.push(e); seen[e.t] = 1; added++; } });
+ if (added) writeLog(loc); return added;
+}
+function ghPull(quiet){
+ var c = readGH(); if (!c) return Promise.resolve(false);
+ return fetch(ghUrl(c), { headers:ghHead(c), cache:'no-store' }).then(function(r){
+  if (r.status === 404){ return fetch(GH_API + '/repos/' + c.repo, { headers:ghHead(c), cache:'no-store' }).then(function(p){ if (p.status === 404) throw new Error(no404(c)); if (p.status === 401) throw new Error('Token rejected.'); delete c.sha; writeGH(c); return null; }); }
+  if (r.status === 401) throw new Error('Token rejected.');
+  if (!r.ok) throw new Error('GitHub said ' + r.status);
+  return r.json();
+ }).then(function(j){
+  if (!j) return 0;
+  var cc = readGH(); if (!cc) return 0;
+  cc.sha = j.sha; delete cc.err; writeGH(cc);
+  var data = null; try { data = JSON.parse(b64dec(j.content)); } catch(e){ throw new Error('log.json in the repo is not valid JSON.'); }
+  var n = merge(data); if (n) paintWeek(); paintGH(); return n;
+ }).catch(function(e){ if (offline(e)) return false; var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
+}
+var busy = null;
+function ghPush(quiet, retried){
+ var c = readGH(); if (!c) return Promise.resolve(false);
+ if (busy && !retried) return busy;
+ var body = JSON.stringify(readLog(), null, 1);
+ var p = fetch(ghUrl(c), { method:'PUT', headers:ghHead(c), body:JSON.stringify({ message:'log', content:b64enc(body), sha:c.sha }) }).then(function(r){
+  if ((r.status === 409 || r.status === 422) && !retried) return ghPull(1).then(function(){ return ghPush(quiet, 1); });
+  if (r.status === 404) throw new Error(no404(c));
+  if (r.status === 401) throw new Error('Token rejected.');
+  if (r.status === 403) throw new Error('Token cannot write to ' + c.repo + '. It needs Contents: read and write.');
+  if (!r.ok) throw new Error('GitHub said ' + r.status);
+  return r.json();
+ }).then(function(j){
+  var cc = readGH(); if (!cc) return false;
+  cc.sha = (j.content || {}).sha; cc.at = Date.now(); delete cc.err; writeGH(cc);
+  store.del('en-dirty'); paintGH(); if (!quiet) toast('Synced'); return true;
+ }).catch(function(e){ if (offline(e)){ paintGH(); if (!quiet) toast('No connection. Will sync later.'); return false; } var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
+ if (retried) return p;
+ busy = p; return p.then(function(x){ busy = null; return x; });
+}
+function flush(){ var c = readGH(); if (c && store.get('en-dirty') && !c.err) ghPush(1); }
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flush(); else { paintHead(); ghPull(1); } });
+window.addEventListener('pagehide', flush);
+window.addEventListener('online', flush);
+
+document.getElementById('ghSave').addEventListener('click', function(){
+ var repo = document.getElementById('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
+ var tok = document.getElementById('ghTok').value.trim(), old = readGH();
+ if (!/^[\w.-]+\/[\w.-]+$/.test(repo)){ toast('Repo looks like owner/name'); return; }
+ if (!tok && old) tok = old.tok;
+ if (!tok){ toast('Paste a token'); return; }
+ writeGH({ repo:repo, tok:tok }); document.getElementById('ghTok').value = ''; paintGH(); toast('Connecting…');
+ ghPull().then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } });
+});
+document.getElementById('ghNow').addEventListener('click', function(){ if (!readGH()){ toast('Connect first'); return; } ghPull().then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } }); });
+document.getElementById('ghOff').addEventListener('click', function(){ if (!readGH()) return; if (!confirm('Forget the token on this device? Everything already synced stays in the repo.')) return; writeGH(null); paintGH(); toast('Forgotten'); });
+
+paintHead(); paintWeek(); paintGH();
+if (readGH()) ghPull(1).then(function(){ flush(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+</script>
+</body>
+</html>
