@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0118">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -16,35 +16,35 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
- --bg:#0a0118; --ink:#f0eaff; --mute:#a49bbd; --orchid:#bda6ff; --line:rgba(189,166,255,.22); --line2:rgba(189,166,255,.1);
+ --bg:#0a0118; --ink:#f0eaff; --mute:#a49bbd; --orchid:#bda6ff; --line:rgba(189,166,255,.32); --line2:rgba(189,166,255,.1);
  --mint:#21f6bc; --amber:#f5a623; --gold:#ffd36b; --violet:#8b6fd6; --ice:#86cbfe; --rose:#ff6e9c;
  --a:#8b6fd6; --a-ink:#0a0118;
  --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,monospace; --serif:"Fraunces",ui-serif,Georgia,serif;
 }
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body{ margin:0; background:var(--bg); color:var(--ink); }
+html{ background:var(--bg); } html,body{ margin:0; color:var(--ink); }
 body{ font:400 16px/1.55 var(--mono); padding:max(16px,env(safe-area-inset-top)) 18px calc(48px + env(safe-area-inset-bottom)); max-width:520px; margin:0 auto; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
 #stars{ position:fixed; inset:0; z-index:-1; }
 canvas{ display:block; }
-.top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; }
+.top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
 .when{ color:var(--mute); font-size:14px; letter-spacing:.04em; }
-h1{ font:italic 400 40px/1.05 var(--serif); margin:4px 0 0; letter-spacing:-.01em; }
+h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em; }
 .today{ display:flex; gap:7px; margin-top:12px; }
-.today i{ width:9px; height:9px; border-radius:50%; border:1px solid var(--line); display:block; }
+.today i{ width:9px; height:9px; border-radius:50%; border:1px solid var(--line2); display:block; }
 .today i.now{ border-color:var(--orchid); }
-.sync{ width:10px; height:10px; border-radius:50%; margin-top:8px; background:var(--mute); opacity:.35; }
+.sync{ width:12px; height:12px; border-radius:50%; margin:8px -14px 0 0; background:var(--mute); opacity:.35; box-sizing:content-box; border:16px solid transparent; background-clip:padding-box; cursor:pointer; }
 .sync.on{ background:var(--mint); opacity:1; } .sync.wait{ background:var(--gold); opacity:1; } .sync.err{ background:var(--rose); opacity:1; }
 
 .k{ color:var(--mute); font-size:13px; letter-spacing:.08em; margin:0 0 6px; }
 .q{ font:italic 400 24px/1.25 var(--serif); margin:0 0 14px; color:var(--ink); }
 .hint{ color:var(--mute); font-size:14px; margin:-6px 0 14px; }
 
-.fieldWrap{ position:relative; width:calc(100% + 36px); margin:0 -18px 2px; height:330px; touch-action:none; cursor:ns-resize; }
+.fieldWrap{ position:relative; width:100%; margin:0 0 2px; height:270px; touch-action:pan-y; cursor:pointer; }
 #field{ width:100%; height:100%; }
 .mid{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .num{ font:300 76px/1 var(--serif); color:var(--a); font-variant-numeric:tabular-nums; }
 .num.none{ color:var(--line); }
-.word{ text-align:center; font:italic 300 22px/1.3 var(--serif); color:var(--ink); min-height:30px; margin:6px 0 18px; }
+.word{ text-align:center; font:italic 300 19px/1.3 var(--serif); color:var(--mute); min-height:26px; margin:0 0 10px; }
 
 .dots{ display:flex; justify-content:space-between; padding:8px 0; touch-action:none; cursor:pointer; }
 .dot{ width:26px; height:26px; border-radius:50%; border:1px solid var(--line); position:relative; }
@@ -52,9 +52,11 @@ h1{ font:italic 400 40px/1.05 var(--serif); margin:4px 0 0; letter-spacing:-.01e
 .dot.pick{ transform:scale(1.25); }
 .ends{ display:flex; justify-content:space-between; color:var(--mute); font-size:13px; letter-spacing:.06em; margin:2px 0 0; }
 
-.sec{ margin-top:38px; }
+.sec{ margin-top:28px; }
+.more{ color:var(--mute); border-style:dashed; }
+.sec textarea{ display:none; } .sec.words textarea{ display:block; }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-.chip{ padding:9px 13px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
+.chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
 .drain .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
 .add .chip.on{ background:var(--mint); border-color:var(--mint); color:var(--bg); }
 .body .chip.on{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
@@ -63,22 +65,27 @@ textarea{ resize:none; min-height:48px; }
 textarea:focus,input:focus{ border-color:var(--orchid); }
 ::placeholder{ color:var(--mute); opacity:.8; }
 
-.save{ display:block; width:100%; margin:36px 0 10px; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
-.save:disabled{ background:transparent; color:var(--mute); border-color:var(--line); }
-.after{ text-align:center; color:var(--mint); font-size:14px; min-height:22px; }
-.calm{ text-align:center; margin-top:10px; font-size:14px; color:var(--mute); } .calm a{ color:var(--mute); text-decoration:underline; text-underline-offset:3px; margin:0 8px; cursor:pointer; }
+.save{ position:sticky; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:5; display:block; width:100%; margin:28px 0 10px; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
+.save:disabled{ background:var(--bg); color:var(--mute); border-color:var(--line); }
+.after{ text-align:center; color:var(--mint); font-size:14px; min-height:22px; } .after a{ color:var(--orchid); text-decoration:underline; text-underline-offset:3px; margin-left:8px; cursor:pointer; }
+.calm{ text-align:center; margin-top:10px; font-size:14px; color:var(--mute); } .calm a{ display:inline-block; padding:12px 10px; color:var(--mute); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .br{ position:fixed; inset:0; z-index:20; background:var(--bg); display:none; }
 .br.show{ display:block; }
 #brC{ position:absolute; inset:0; width:100%; height:100%; }
 .brWord{ position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center; font:italic 300 30px/1.2 var(--serif); color:var(--ink); pointer-events:none; }
 .brSub{ position:absolute; left:0; right:0; top:calc(50% + 28px); text-align:center; font-size:13px; letter-spacing:.08em; color:var(--mute); pointer-events:none; }
 .brX{ position:absolute; left:0; right:0; bottom:calc(30px + env(safe-area-inset-bottom)); text-align:center; font-size:14px; color:var(--mute); }
-.tags{ margin-top:18px; }
+.fold{ margin-top:22px; border-top:1px solid var(--line2); }
+.fold summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:12px 0; font-size:14px; }
+.fold summary::-webkit-details-marker{ display:none; } .fold summary em{ font-style:normal; color:var(--orchid); }
+.fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:10px 0 6px; }
+.cyc .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
+.tags{ padding-bottom:6px; }
 .tags .chips{ justify-content:center; margin-bottom:8px; }
-.tags .chip{ font-size:13px; padding:6px 10px; color:var(--mute); } .tags .chip.on{ background:var(--violet); border-color:var(--violet); color:var(--bg); }
+.tags .chip{ font-size:14px; padding:9px 12px; color:var(--mute); } .tags .chip.on{ background:var(--violet); border-color:var(--violet); color:var(--bg); }
 .tags input{ border-color:transparent; border-bottom-color:var(--line); border-radius:0; padding-left:0; padding-right:0; text-align:center; color:var(--mute); }
 
-.sky{ margin-top:52px; }
+.sky{ margin-top:40px; }
 .nav{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
 .nav button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:14px; padding:8px 0; cursor:pointer; }
 .nav button:disabled{ opacity:.3; }
@@ -112,7 +119,6 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="sync" id="syncDot"></div>
 </div>
 
-<p class="k">i · the field</p>
 <p class="q">how much energy is in you right now?</p>
 <div class="fieldWrap" id="fieldWrap">
  <canvas id="field" aria-hidden="true"></canvas>
@@ -123,34 +129,41 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <div class="ends"><span>empty</span><span>full</span></div>
 
 <div class="sec drain">
- <p class="k">ii · what took</p>
  <p class="q">what drained it in the last few hours?</p>
  <div class="chips" id="drainChips"></div>
  <textarea id="drain" rows="1" placeholder="or in your own words" enterkeyhint="done"></textarea>
 </div>
 
 <div class="sec add">
- <p class="k">iii · what gave</p>
  <p class="q">what added to it?</p>
  <div class="chips" id="addChips"></div>
  <textarea id="add" rows="1" placeholder="or in your own words" enterkeyhint="done"></textarea>
 </div>
 
 <div class="sec body">
- <p class="k">iv · the body</p>
  <p class="q">is your body asking for anything?</p>
- <p class="hint">check before you decide. thirst and hunger are the easiest to miss.</p>
+ <p class="hint">water and food are the usual ones.</p>
  <div class="chips" id="bodyChips"></div>
 </div>
 
-<button class="save" id="save" disabled>save</button>
+<details class="fold cyc" id="cyc">
+ <summary>cycle <em id="cycState"></em></summary>
+ <p class="k2">flow</p><div class="chips one" id="cycFlow"></div>
+ <p class="k2">cramps</p><div class="chips one" id="cycCramp"></div>
+ <p class="k2">also</p><div class="chips" id="cycSx"></div>
+</details>
+<details class="fold" id="tagFold">
+ <summary>tags <em id="tagState"></em></summary>
+ <div class="tags"><div class="chips" id="tagChips"></div><input id="tags" type="text" placeholder="a word, then space" autocapitalize="off" autocorrect="off" enterkeyhint="done"></div>
+</details>
+
+<button class="save" id="save" disabled>pick a number</button>
 <div class="after" id="after"></div>
 <div class="calm"><a id="goBreath">breathe</a>·<a id="goStill">a minute of nothing</a></div>
 <div class="br" id="br"><canvas id="brC"></canvas><div class="brWord" id="brWord"></div><div class="brSub" id="brSub"></div><div class="brX">tap anywhere to stop</div></div>
-<div class="tags"><div class="chips" id="tagChips"></div><input id="tags" type="text" placeholder="private tags, optional" autocapitalize="off" autocorrect="off" enterkeyhint="done"></div>
 
 <div class="sky">
- <p class="k">v · the sky</p>
+ <p class="k">the sky</p>
  <div class="nav"><button id="prev">‹ earlier</button><div class="ttl" id="skyTtl"></div><button id="next" disabled>later ›</button></div>
  <canvas id="skyC"></canvas>
  <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, each day its own small constellation.</p>
@@ -175,9 +188,10 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <script>
 // ── storage ──────────────────────────────────────────────────────────
 var store = { get:function(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
- set:function(k,v){ try { localStorage.setItem(k,v); } catch(e){} }, del:function(k){ try { localStorage.removeItem(k); } catch(e){} } };
-function readLog(){ try { var a = JSON.parse(store.get('en-log') || '[]'); return Array.isArray(a) ? a : []; } catch(e){ return []; } }
-function writeLog(a){ a.sort(function(x,y){ return x.t < y.t ? -1 : 1; }); store.set('en-log', JSON.stringify(a)); }
+ set:function(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } }, del:function(k){ try { localStorage.removeItem(k); } catch(e){} } };
+var _log = null;
+function readLog(){ if (_log) return _log; var raw = store.get('en-log') || '[]'; try { var a = JSON.parse(raw); _log = Array.isArray(a) ? a : []; } catch(e){ store.set('en-log-bad', raw); _log = []; } return _log; }
+function writeLog(a){ a.sort(function(x,y){ return x.t < y.t ? -1 : 1; }); _log = a; if (!store.set('en-log', JSON.stringify(a))) toast('not saved: storage is full or blocked'); }
 function pad(n){ return (n < 10 ? '0' : '') + n; }
 function localISO(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 function dayOf(t){ return t.slice(0,10); }
@@ -196,7 +210,7 @@ var SLOT_H = [12, 15, 20];
 function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 12 ? 0 : h < 15 ? 1 : h < 20 ? 2 : 3; }
 
 // Six flat steps, each a meaning: night-violet at rest, ice in the middle, mint is good, gold then amber is lit.
-var STOPS = ['#453380','#8b6fd6','#86cbfe','#21f6bc','#ffd36b','#f5a623'];
+var STOPS = ['#6b55b3','#8b6fd6','#86cbfe','#21f6bc','#ffd36b','#f5a623'];
 var INKS  = ['#f0eaff','#0a0118','#0a0118','#0a0118','#0a0118','#0a0118'];
 var WORDS = ['running on empty','running on empty','low','low','getting by','getting by','steady','good','good','lit up','lit up'];
 function step(v){ return Math.min(5, Math.floor(v / 2)); }
@@ -234,7 +248,7 @@ function paintHead(){
 // Empty is a thin, slow, dim ring. Full is a warped, fast, warm cloud.
 var field = (function(){
  var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap');
- var N = 2600, P = [], cur = { t:-1, m:0 }, tgt = { t:-1 }, last = 0, run = true, W = 0, H = 0, rot = 0;
+ var N = 2600, P = [], cur = { t:-1, m:0 }, tgt = { t:-1 }, last = 0, run = false, raf = 0, W = 0, H = 0, rot = 0, hidden = false;
  var s = 11; function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
  for (var i = 0; i < N; i++) P.push({ u:rnd() * Math.PI * 2, v:rnd() * Math.PI * 2, k:rnd(), j:rnd() * Math.PI * 2, halo:i < 180 });
  function size(){ W = wrap.clientWidth; H = wrap.clientHeight; var r = dpr(); c.width = W * r; c.height = H * r; x.setTransform(r, 0, 0, r, 0, 0); }
@@ -244,6 +258,7 @@ var field = (function(){
  function frame(now){
   if (!run) return;
   var dt = Math.min(.05, (now - last) / 1000 || 0); last = now;
+  if (document.hidden){ raf = requestAnimationFrame(frame); return; }
   // ease toward the target: the number changes, the field follows
   if (tgt.t < 0) cur.t += (-.15 - cur.t) * Math.min(1, dt * 2.5); else cur.t += (tgt.t - cur.t) * Math.min(1, dt * 2.5);
   var t = Math.max(0, cur.t), none = tgt.t < 0;
@@ -274,18 +289,19 @@ var field = (function(){
    var sz = d > .7 ? 2.5 : 1.5;
    x.fillRect(cx + x1 * sc, cy + y2 * sc * .92, sz, sz);
   }
-  requestAnimationFrame(frame);
+  raf = requestAnimationFrame(frame);
  }
- function start(){ if (!run){ run = true; last = 0; requestAnimationFrame(frame); } }
- function stop(){ run = false; }
- size(); requestAnimationFrame(frame);
+ function start(){ if (!run && !hidden){ run = true; last = 0; raf = requestAnimationFrame(frame); } }
+ function stop(){ run = false; if (raf){ cancelAnimationFrame(raf); raf = 0; } }
+ size(); start();
  addEventListener('resize', size);
  document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
  if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ en[0].isIntersecting ? start() : stop(); }).observe(wrap);
- function onPt(e){ var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); }
- wrap.addEventListener('pointerdown', function(e){ wrap.setPointerCapture(e.pointerId); onPt(e); });
- wrap.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); });
- return { set:function(v){ tgt.t = v === null ? -1 : v / 10; } };
+ // a tap sets the number; the dots below take drags, so the page still scrolls
+ var down = null;
+ wrap.addEventListener('pointerdown', function(e){ down = { x:e.clientX, y:e.clientY }; });
+ wrap.addEventListener('pointerup', function(e){ if (!down || Math.abs(e.clientY - down.y) > 8 || Math.abs(e.clientX - down.x) > 8){ down = null; return; } down = null; var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); });
+ return { set:function(v){ tgt.t = v === null ? -1 : v / 10; }, hide:function(h){ hidden = h; h ? stop() : start(); } };
 })();
 function paintDial(){ field.set(val); }
 
@@ -303,19 +319,18 @@ var breath = (function(){
   var el = (now - t0) / 1000, target, label, note;
   if (mode === 'breath'){
    var cyc = IN + OUT, n = Math.floor(el / cyc), ph = el - n * cyc;
-   if (n >= ROUNDS){ stop('that was four. nice.'); return; }
+   if (n >= ROUNDS){ stop('four rounds.'); return; }
    if (ph < IN){ var u = ph / IN; target = .3 + .55 * (1 - Math.cos(u * Math.PI)) / 2; label = 'in'; note = 'four'; }
    else { var v = (ph - IN) / OUT; target = .85 - .55 * (1 - Math.cos(v * Math.PI)) / 2; label = 'out'; note = 'seven'; }
    note = (n + 1) + ' of ' + ROUNDS + ' · ' + note;
   } else {
-   if (el >= STILL){ stop('a minute. you did nothing. good.'); return; }
+   if (el >= STILL){ stop('a minute.'); return; }
    target = .5 + .05 * Math.sin(el * .5); label = ''; note = Math.ceil(STILL - el) + '';
   }
   rad += (target - rad) * .08;
   word.textContent = label; sub.textContent = note;
   x.clearRect(0, 0, W, H);
-  var cx = W / 2, cy = H / 2, sc = Math.min(W, H) * .42 * rad, rot = el * .12, cr = Math.cos(rot), sr = Math.sin(rot), col = css('--a') || '#8b6fd6';
-  var rgb = [parseInt(col.slice(1,3),16), parseInt(col.slice(3,5),16), parseInt(col.slice(5,7),16)];
+  var cx = W / 2, cy = H / 2, sc = Math.min(W, H) * .42 * rad, rot = el * .12, cr = Math.cos(rot), sr = Math.sin(rot);
   for (var i = 0; i < N; i++){
    var p = P[i], r = sc * (1 + (p.k - .5) * .12), sx = Math.sin(p.b), X = sx * Math.cos(p.a), Y = Math.cos(p.b), Z = sx * Math.sin(p.a);
    var x1 = X * cr - Z * sr, z1 = X * sr + Z * cr, d = (z1 + 1) / 2;
@@ -325,8 +340,9 @@ var breath = (function(){
   }
   requestAnimationFrame(frame);
  }
- function start(m){ mode = m; size(); on = true; t0 = performance.now(); rad = .3; box.classList.add('show'); requestAnimationFrame(frame); }
- function stop(msg){ on = false; box.classList.remove('show'); if (msg) toast(msg); }
+ var rgb = [139,111,214];
+ function start(m){ mode = m; size(); on = true; t0 = performance.now(); rad = .3; var col = css('--a') || '#8b6fd6'; rgb = [parseInt(col.slice(1,3),16), parseInt(col.slice(3,5),16), parseInt(col.slice(5,7),16)]; box.classList.add('show'); field.hide(true); requestAnimationFrame(frame); }
+ function stop(msg){ on = false; box.classList.remove('show'); field.hide(false); if (msg) toast(msg); }
  box.addEventListener('click', function(){ stop(); });
  addEventListener('resize', size);
  document.getElementById('goBreath').addEventListener('click', function(){ start('breath'); });
@@ -342,8 +358,9 @@ function paintTags(){
  var box = document.getElementById('tagChips'), on = {}; Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
  var list = tagNew.concat(tagsSeen().filter(function(w){ return tagNew.indexOf(w) < 0; }));
  box.innerHTML = list.map(function(w){ var isOn = on[w] || tagNew.indexOf(w) >= 0; return '<span class="chip' + (isOn ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; }).join('');
- Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); }); });
+ Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); tagState(); }); }); tagState();
 }
+function tagState(){ document.getElementById('tagState').textContent = tagsPicked().join(' '); }
 function tagsPicked(){ var a = []; Array.prototype.forEach.call(document.querySelectorAll('#tagChips .chip.on'), function(c){ a.push(c.dataset.w); }); return a; }
 function tagCommit(){ var inp = document.getElementById('tags'); inp.value.split(/[,\s]+/).forEach(function(w){ w = w.trim().toLowerCase(); if (w && tagNew.indexOf(w) < 0) tagNew.push(w); }); inp.value = ''; paintTags(); }
 document.getElementById('tags').addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ',' || ev.key === ' '){ ev.preventDefault(); tagCommit(); } });
@@ -360,13 +377,38 @@ function setVal(v, quiet){
  var num = document.getElementById('num'); num.textContent = v; num.classList.remove('none');
  document.getElementById('word').textContent = WORDS[v];
  dots.setAttribute('aria-valuenow', v);
- document.getElementById('save').disabled = false;
- paintDial(); paintSky();
+ var sv = document.getElementById('save'); sv.disabled = false; sv.textContent = 'save';
+ paintDial();
  if (!quiet && navigator.vibrate) navigator.vibrate(4);
 }
 function onPt(e){ var r = dots.getBoundingClientRect(); setVal(Math.floor((e.clientX - r.left) / (r.width / 11))); }
 dots.addEventListener('pointerdown', function(e){ dots.setPointerCapture(e.pointerId); onPt(e); });
 dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); });
+
+
+// ── cycle: one quiet line, closed unless opened. Day-level, kept with the first entry that logs it.
+var CYC = { flow:['none','spotting','light','medium','heavy'], cramp:['none','mild','strong'], sx:['headache','bloated','sore','cravings','low mood','back ache','acne','libido up','libido down'] };
+function cycToday(){ var t = todayStr(), r = null; readLog().forEach(function(e){ if (dayOf(e.t) === t && e.cyc) r = e.cyc; }); return r; }
+function cycDay(){ var last = null; readLog().forEach(function(e){ if (e.cyc && e.cyc.flow >= 2) last = dayOf(e.t); }); if (!last) return null; var d = Math.round((new Date(todayStr() + 'T12:00:00') - new Date(last + 'T12:00:00')) / 864e5) + 1; return d > 90 ? null : d; }
+function paintCyc(){
+ var cur = cycToday() || {};
+ function row(id, list, sel, one){ var box = document.getElementById(id); box.innerHTML = list.map(function(w, i){ var on = one ? sel === i : (sel || []).indexOf(w) >= 0; return '<span class="chip' + (on ? ' on' : '') + '" data-i="' + i + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; }).join('');
+  Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){ if (one){ var was = c.classList.contains('on'); Array.prototype.forEach.call(box.children, function(o){ o.classList.remove('on'); }); if (!was) c.classList.add('on'); } else c.classList.toggle('on'); paintCycState(); }); }); }
+ row('cycFlow', CYC.flow, cur.flow, true); row('cycCramp', CYC.cramp, cur.cramp, true); row('cycSx', CYC.sx, cur.sx, false);
+ paintCycState();
+}
+function cycPicked(){
+ var f = document.querySelector('#cycFlow .chip.on'), c = document.querySelector('#cycCramp .chip.on'), sx = [];
+ Array.prototype.forEach.call(document.querySelectorAll('#cycSx .chip.on'), function(x){ sx.push(x.dataset.w); });
+ if (!f && !c && !sx.length) return null;
+ var o = {}; if (f) o.flow = +f.dataset.i; if (c) o.cramp = +c.dataset.i; if (sx.length) o.sx = sx; return o;
+}
+function paintCycState(){
+ var o = cycPicked(), p = [], d = cycDay();
+ if (o && o.flow > 0) p.push(CYC.flow[o.flow]); if (o && o.cramp > 0) p.push(CYC.cramp[o.cramp] + ' cramps'); if (o && o.sx) p.push(o.sx.join(', '));
+ if (d) p.unshift('day ' + d);
+ document.getElementById('cycState').textContent = p.join(' · ');
+}
 
 // ── chips ────────────────────────────────────────────────────────────
 // Starters are hers. Her own typed words join once she has used them twice.
@@ -380,14 +422,21 @@ function learned(kind){
  return Object.keys(cnt).filter(function(w){ return cnt[w] >= 2 && START[kind].indexOf(w) < 0; }).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 6);
 }
 function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
+var openKinds = {};
 function paintChips(){
  ['drain','add','body'].forEach(function(kind){
-  var box = document.getElementById(kind + 'Chips'), u = usage(kind);
-  var list = learned(kind).concat(START[kind]);
-  if (kind !== 'body') list.sort(function(a,b){ return (u[b] || 0) - (u[a] || 0); });
-  list = list.slice(0, kind === 'body' ? 10 : 10);
-  box.innerHTML = list.map(function(w){ return '<span class="chip" data-w="' + esc(w) + '">' + esc(w) + '</span>'; }).join('');
-  Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
+  var box = document.getElementById(kind + 'Chips'), on = {};
+  Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
+  var list = START[kind].concat(learned(kind)), full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
+  var show = full ? list : list.slice(0, 6);
+  var h = show.map(function(w){ return '<span class="chip' + (on[w] ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
+  if (!full) h.push('<span class="chip more" data-more="1">more</span>');
+  if (kind !== 'body') h.push('<span class="chip more" data-words="1">words</span>');
+  box.innerHTML = h.join('');
+  Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
+   if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
+   if (c.dataset.words){ var sec = box.parentNode; sec.classList.toggle('words'); if (sec.classList.contains('words')) sec.querySelector('textarea').focus(); return; }
+   c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
  });
 }
 function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySelectorAll('#' + kind + 'Chips .chip.on'), function(c){ a.push(c.dataset.w); }); return a; }
@@ -400,21 +449,26 @@ document.getElementById('save').addEventListener('click', function(){
  if (dr) e.drain = dr; if (ad) e.add = ad; if (tg.length) e.tags = tg;
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
+ var cy = cycPicked(); if (cy) e.cyc = cy;
  var a = readLog(); a.push(e); writeLog(a);
- resetForm(); paintHead(); paintChips(); paintDial(); paintSky();
- var n = a.filter(function(x){ return dayOf(x.t) === todayStr(); }).length;
- document.getElementById('after').textContent = 'saved. ' + n + (n === 1 ? ' point' : ' points') + ' today.';
- if (bc.indexOf('a long breath') >= 0) setTimeout(function(){ breath.start('breath'); }, 500);
- else if (bc.indexOf('slow down') >= 0 || bc.indexOf('rest') >= 0) setTimeout(function(){ breath.start('still'); }, 500);
- else if (bc.length) toast(bc.length === 1 ? 'go get ' + bc[0] + '.' : 'go take care of that.');
- store.set('en-dirty', '1'); ghPush(1);
+ resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky();
+ var af = document.getElementById('after');
+ if (bc.indexOf('a long breath') >= 0) af.innerHTML = 'saved.<a id="afBreath">breathe?</a>';
+ else if (bc.indexOf('slow down') >= 0 || bc.indexOf('rest') >= 0) af.innerHTML = 'saved.<a id="afStill">a minute of nothing?</a>';
+ else af.textContent = 'saved.';
+ var ab = document.getElementById('afBreath'), as = document.getElementById('afStill');
+ if (ab) ab.addEventListener('click', function(){ breath.start('breath'); }); if (as) as.addEventListener('click', function(){ breath.start('still'); });
+ markDirty(); ghPush(1);
 });
 function resetForm(){
  val = null; tint(null); Array.prototype.forEach.call(dots.children, function(el){ el.className = 'dot'; });
  var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
  document.getElementById('word').textContent = '';
  ['drain','add','tags'].forEach(function(id){ document.getElementById(id).value = ''; }); tagNew = []; document.getElementById('tagChips').innerHTML = ''; paintTags();
- document.getElementById('save').disabled = true;
+ var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'pick a number';
+ openKinds = {}; document.querySelectorAll('.sec.words').forEach(function(x){ x.classList.remove('words'); });
+ document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
+ document.getElementById('cyc').open = false; document.getElementById('tagFold').open = false;
 }
 
 // ── the sky: 28 days across, 24 hours down ───────────────────────────
@@ -434,10 +488,11 @@ function paintSky(){
  // ghost grid: a faint point for every slot not yet lived or logged
  days.forEach(function(ds, i){ [9, 13.5, 17.5, 22].forEach(function(h){ x.fillStyle = 'rgba(189,166,255,.16)'; x.fillRect(Math.round(X(i)) - 1, Math.round(Y(h)) - 1, 2, 2); }); });
  // day letters; mondays and today stand out
- x.font = '11px ' + mono; x.textAlign = 'center';
- days.forEach(function(ds, i){ var d = new Date(ds + 'T12:00:00'), dow = (d.getDay() + 6) % 7; x.fillStyle = ds === tod ? css('--ink') : dow === 0 ? css('--orchid') : 'rgba(189,166,255,.4)'; x.fillText('MTWTFSS'[dow], X(i), B + 12); });
- // the points
+ x.font = '12px ' + mono; x.textAlign = 'center';
+ days.forEach(function(ds, i){ var d = new Date(ds + 'T12:00:00'), dow = (d.getDay() + 6) % 7; x.fillStyle = ds === tod ? css('--ink') : dow === 0 ? css('--orchid') : 'rgba(189,166,255,.6)'; x.fillText('MTWTFSS'[dow], X(i), B + 12); });
+ // the points; a thin tick at the top of a day marks flow
  var log = readLog(), by = {}; skyPts = [];
+ log.forEach(function(e){ var i = days.indexOf(dayOf(e.t)); if (i >= 0 && e.cyc && e.cyc.flow >= 1){ x.fillStyle = e.cyc.flow >= 2 ? css('--rose') : 'rgba(255,110,156,.45)'; x.fillRect(Math.round(X(i)) - 2, T - 6, 5, 2); } });
  log.forEach(function(e){ var i = days.indexOf(dayOf(e.t)); if (i >= 0) (by[i] = by[i] || []).push(e); });
  Object.keys(by).forEach(function(i){
   var es = by[i], ps = es.map(function(e){ return { x:X(+i), y:Y(hourOf(e.t)), e:e }; });
@@ -462,14 +517,16 @@ function showNote(e){
  p.push('<b>' + e.e + ' · ' + WORDS[e.e] + '</b> · ' + d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }).toLowerCase() + ', ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }).toLowerCase());
  var dr = (e.drainChips || []).concat(e.drain ? [e.drain] : []), ad = (e.addChips || []).concat(e.add ? [e.add] : []);
  if (dr.length) p.push('<b>took</b> ' + esc(dr.join(', '))); if (ad.length) p.push('<b>gave</b> ' + esc(ad.join(', ')));
- if (e.body) p.push('<b>body wanted</b> ' + esc(e.body.join(', '))); if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
+ if (e.body) p.push('<b>body wanted</b> ' + esc(e.body.join(', ')));
+ if (e.cyc){ var cp = []; if (e.cyc.flow) cp.push(CYC.flow[e.cyc.flow]); if (e.cyc.cramp) cp.push(CYC.cramp[e.cyc.cramp] + ' cramps'); if (e.cyc.sx) cp = cp.concat(e.cyc.sx); if (cp.length) p.push('<b>cycle</b> ' + esc(cp.join(', '))); }
+ if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
  document.getElementById('note').innerHTML = p.join('<br>');
 }
 // Only plain counts and means over the last 28 days. Nothing here claims a cause.
 function paintInsight(log){
  var box = document.getElementById('insight'), cut = new Date(); cut.setDate(cut.getDate() - 28);
  var rec = log.filter(function(e){ return new Date(e.t) >= cut; });
- if (rec.length < 8){ box.innerHTML = rec.length ? 'after ' + (8 - rec.length) + ' more points this will start to say something.' : ''; return; }
+ if (rec.length < 8){ box.innerHTML = rec.length ? 'the sky fills in as you go.' : ''; return; }
  var bySlot = {}; rec.forEach(function(e){ (bySlot[e.slot] = bySlot[e.slot] || []).push(e.e); });
  var means = SLOTS.filter(function(s){ return bySlot[s] && bySlot[s].length >= 2; }).map(function(s){ var a = bySlot[s]; return { s:s, m:a.reduce(function(x,y){ return x+y; }, 0) / a.length }; }).sort(function(a,b){ return b.m - a.m; });
  var cnt = function(k){ var c = {}; rec.forEach(function(e){ (e[k] || []).forEach(function(w){ c[w] = (c[w] || 0) + 1; }); }); var top = Object.keys(c).sort(function(a,b){ return c[b] - c[a]; })[0]; return top ? { w:top, n:c[top] } : null; };
@@ -516,10 +573,13 @@ function paintGH(){
 }
 function ghErr(c, m){ c.err = m; writeGH(c); paintGH(); }
 
-// union by timestamp; nothing is ever overwritten
+// union by timestamp; nothing is ever overwritten. The dirty flag is a counter so a save during a push is not lost.
+var dirtySeq = 0;
+function markDirty(){ dirtySeq++; store.set('en-dirty', String(dirtySeq)); }
+function okEntry(e){ return e && typeof e.t === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(e.t) && typeof e.e === 'number'; }
 function merge(remote){
  var loc = readLog(), seen = {}, added = 0; loc.forEach(function(e){ seen[e.t] = 1; });
- (Array.isArray(remote) ? remote : []).forEach(function(e){ if (e && e.t && !seen[e.t]){ loc.push(e); seen[e.t] = 1; added++; } });
+ (Array.isArray(remote) ? remote : []).forEach(function(e){ if (okEntry(e) && !seen[e.t]){ loc.push(e); seen[e.t] = 1; added++; } });
  if (added) writeLog(loc); return added;
 }
 function ghPull(quiet){
@@ -534,15 +594,15 @@ function ghPull(quiet){
   var cc = readGH(); if (!cc) return 0;
   cc.sha = j.sha; delete cc.err; writeGH(cc);
   var data = null; try { data = JSON.parse(b64dec(j.content)); } catch(e){ throw new Error('log.json in the repo is not valid JSON.'); }
-  var n = merge(data); if (n){ paintHead(); paintChips(); paintDial(); paintSky(); } paintGH(); return n;
+  var n = merge(data); if (n){ paintHead(); paintChips(); paintCyc(); paintTags(); paintDial(); paintSky(); } paintGH(); return n;
  }).catch(function(e){ if (offline(e)) return false; var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
 }
 var busy = null;
 function ghPush(quiet, retried){
  var c = readGH(); if (!c) return Promise.resolve(false);
  if (busy && !retried) return busy;
- var body = JSON.stringify(readLog(), null, 1);
- var p = fetch(ghUrl(c), { method:'PUT', headers:ghHead(c), body:JSON.stringify({ message:'log', content:b64enc(body), sha:c.sha }) }).then(function(r){
+ var body = JSON.stringify(readLog()), seq = dirtySeq;
+ var p = fetch(ghUrl(c), { method:'PUT', headers:ghHead(c), keepalive:body.length < 50000, body:JSON.stringify({ message:'log', content:b64enc(body), sha:c.sha }) }).then(function(r){
   if ((r.status === 409 || r.status === 422) && !retried) return ghPull(1).then(function(){ return ghPush(quiet, 1); });
   if (r.status === 404) throw new Error(no404(c));
   if (r.status === 401) throw new Error('Token rejected.');
@@ -552,13 +612,17 @@ function ghPush(quiet, retried){
  }).then(function(j){
   var cc = readGH(); if (!cc) return false;
   cc.sha = (j.content || {}).sha; cc.at = Date.now(); delete cc.err; writeGH(cc);
-  store.del('en-dirty'); paintGH(); if (!quiet) toast('Synced'); return true;
+  if (dirtySeq === seq) store.del('en-dirty'); paintGH(); if (!quiet) toast('Synced'); if (dirtySeq !== seq) return ghPush(1, 1); return true;
  }).catch(function(e){ if (offline(e)){ paintGH(); if (!quiet) toast('No connection. Will sync later.'); return false; } var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
  if (retried) return p;
  busy = p; return p.then(function(x){ busy = null; return x; });
 }
 function flush(){ var c = readGH(); if (c && store.get('en-dirty') && !c.err) ghPush(1); }
-document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flush(); else { paintHead(); paintDial(); paintSky(); ghPull(1); } });
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flush(); else { paintHead(); paintDial(); paintSky(); ghPull(1).then(flush); } });
+// the clock moves on without a save: the day name and slot follow it
+var _hk = todayStr() + slotFor(new Date());
+setInterval(function(){ if (document.hidden) return; var k = todayStr() + slotFor(new Date()); if (k !== _hk){ _hk = k; paintHead(); paintCyc(); paintSky(); } }, 60000);
+document.getElementById('syncDot').addEventListener('click', function(){ var b = document.getElementById('ghBox'); b.open = true; b.scrollIntoView({ behavior:'smooth' }); });
 window.addEventListener('pagehide', flush);
 window.addEventListener('online', flush);
 
@@ -575,7 +639,8 @@ document.getElementById('ghForm').addEventListener('submit', function(ev){
 document.getElementById('ghNow').addEventListener('click', function(){ if (!readGH()){ toast('Connect first'); return; } ghPull().then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } }); });
 document.getElementById('ghOff').addEventListener('click', function(){ if (!readGH()) return; if (!confirm('Forget the token on this device? Everything already synced stays in the repo.')) return; writeGH(null); paintGH(); toast('Forgotten'); });
 
-paintHead(); paintChips(); paintTags(); paintDial(); paintSky(); paintGH();
+dirtySeq = +(store.get('en-dirty') || 0);
+paintHead(); paintChips(); paintCyc(); paintTags(); paintDial(); paintSky(); paintGH();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ paintDial(); paintSky(); });
 if (readGH()) ghPull(1).then(function(){ flush(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
