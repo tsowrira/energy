@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
-<meta name="theme-color" content="#16131f">
+<meta name="theme-color" content="#0b0914">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,102 +13,135 @@
 <title>Energy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&display=swap" rel="stylesheet">
 <style>
 :root{
- --bg:#16131f; --card:#1d1929; --line:rgba(203,195,243,.1);
- --txt:#e2d6ff; --fade:rgba(203,195,243,.7); --dim:rgba(203,195,243,.32);
- --a:#bb9af7; --a-dim:rgba(187,154,247,.18); --ink:#16131f;
+ --bg:#0b0914; --card:#15121f; --line:rgba(226,214,255,.12);
+ --txt:#efe9ff; --soft:#cbc3f3; --dim:#7f7799;
+ --a:#8b6fd6; --a-ink:#efe9ff;
+ --mint:#21f6bc; --gold:#ffd36b; --rose:#ff5c7a;
  --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 'Inter',sans-serif;-webkit-font-smoothing:antialiased;min-height:100%}
-body{padding:calc(var(--sat) + 24px) 20px calc(var(--sab) + 40px);max-width:460px;margin:0 auto;overscroll-behavior-y:none}
-h1{font:700 34px/1 'Playfair Display',serif;letter-spacing:-.02em;margin:0}
-.eyebrow{font:600 11px/1 'Inter',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fade)}
-.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
-.sync{width:8px;height:8px;border-radius:50%;background:var(--dim);margin-bottom:6px;transition:background .3s}
-.sync.on{background:#73daca} .sync.wait{background:#e0af68} .sync.err{background:#ff75a0}
-.sync.off{background:transparent;box-shadow:inset 0 0 0 1.5px var(--dim)}
-.q{margin:0 0 10px;font-size:15px;color:var(--fade)}
-.big{font:700 72px/1 'Playfair Display',serif;color:var(--a);letter-spacing:-.03em;min-height:72px;margin:6px 0 14px;transition:opacity .2s}
-.big.none{color:var(--dim)}
-.big small{font:500 13px/1 'Inter',sans-serif;color:var(--fade);letter-spacing:.1em;text-transform:uppercase;margin-left:10px;vertical-align:middle}
-.dots{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin-bottom:6px;touch-action:none}
-.dot{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--line);background:var(--card);position:relative;transition:transform .12s,background .12s,border-color .12s}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:17px/1.5 'Inter',sans-serif;-webkit-font-smoothing:antialiased;min-height:100%}
+body{padding:calc(var(--sat) + 28px) 22px calc(var(--sab) + 48px);max-width:480px;margin:0 auto;overscroll-behavior-y:none;position:relative}
+#sky{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.serif{font-family:'Fraunces',serif;font-optical-sizing:auto}
+
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:34px}
+.when{font:300 15px/1.3 'Inter',sans-serif;color:var(--soft);letter-spacing:.01em}
+h1{font:500 40px/1.05 'Fraunces',serif;letter-spacing:-.02em;margin:2px 0 0;color:var(--txt)}
+.sync{width:9px;height:9px;border-radius:50%;margin-top:10px;background:transparent;box-shadow:inset 0 0 0 1.5px var(--dim)}
+.sync.on{background:var(--mint);box-shadow:none} .sync.wait{background:var(--gold);box-shadow:none} .sync.err{background:var(--rose);box-shadow:none}
+
+.q{margin:0 0 12px;font-size:18px;line-height:1.4;color:var(--txt);font-weight:500}
+.hint{font-size:15px;color:var(--soft);line-height:1.5;margin:-4px 0 14px}
+
+/* the moon: a flat fill that rises with the number */
+.hero{display:flex;align-items:center;gap:22px;margin:6px 0 18px}
+.moon{width:112px;height:112px;border-radius:50%;flex:none;position:relative;overflow:hidden;background:var(--card);border:1.5px solid var(--line)}
+.moon i{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--a);transition:height .18s ease,background .18s}
+.num{font:300 96px/1 'Fraunces',serif;letter-spacing:-.04em;color:var(--txt);min-width:1.2em}
+.num.none{color:var(--dim)}
+.word{font:italic 300 20px/1.2 'Fraunces',serif;color:var(--soft);min-height:24px}
+.dots{display:grid;grid-template-columns:repeat(11,1fr);gap:5px;touch-action:none;padding:6px 0}
+.dot{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--line);background:var(--card);transition:background .12s,border-color .12s,transform .12s}
 .dot.lit{background:var(--a);border-color:var(--a)}
-.dot.lit.pick{box-shadow:0 0 0 3px var(--bg),0 0 0 4.5px var(--a)}
-.dot.pick{transform:scale(1.25)}
-.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:28px}
-label.f{display:block;margin-bottom:18px}
-label.f span{display:block;font-size:13px;color:var(--fade);margin-bottom:6px}
-textarea,input[type=text],input[type=password]{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--txt);font:inherit;font-size:16px;padding:12px 14px;outline:none;resize:none}
-textarea:focus,input:focus{border-color:rgba(187,154,247,.5)}
-textarea{min-height:48px;line-height:1.4}
-.chips{display:flex;gap:8px;margin:4px 0 26px}
-.chip{flex:1;border:1px solid var(--line);background:var(--card);color:var(--fade);border-radius:999px;padding:10px 0;font:500 14px 'Inter',sans-serif;text-align:center;transition:all .12s}
-.chip.on{background:rgba(115,218,202,.14);border-color:rgba(115,218,202,.55);color:#73daca}
-.save{width:100%;border:0;border-radius:14px;padding:16px;background:var(--a);color:var(--ink);transition:background .25s;font:600 16px 'Inter',sans-serif;letter-spacing:.01em;transition:transform .1s,opacity .2s}
-.save:active{transform:scale(.985)} .save[disabled]{opacity:.25;background:var(--txt)}
-.tags{margin:14px 0 0;text-align:center}
-.tags input{text-align:center;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:6px 0;font-size:14px;color:var(--fade)}
-.tags input::placeholder{color:var(--dim)}
-.week{margin-top:48px;padding-top:28px;border-top:1px solid var(--line)}
-.grid{display:grid;grid-template-columns:36px repeat(7,1fr);gap:6px 4px;align-items:center;margin-top:16px}
-.grid .lab{font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
-.grid .dn{text-align:center;font-size:11px;color:var(--dim)}
-.grid .dn.today{color:#73daca}
-.cell{aspect-ratio:1;border-radius:50%;background:var(--card);border:1px solid var(--line);margin:0 auto;width:min(100%,28px);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--ink)}
+.dot.pick{transform:scale(1.3);box-shadow:0 0 0 3px var(--bg),0 0 0 4.5px var(--a)}
+.ends{display:flex;justify-content:space-between;font-size:14px;color:var(--dim);margin:4px 0 34px}
+
+.sec{margin-bottom:30px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--soft);border-radius:999px;padding:9px 15px;font:500 15px/1 'Inter',sans-serif;transition:all .12s;user-select:none}
+.chip.on{color:var(--bg)}
+.sec.drain .chip.on{background:var(--rose);border-color:var(--rose)}
+.sec.add .chip.on{background:var(--mint);border-color:var(--mint)}
+.sec.body .chip.on{background:var(--gold);border-color:var(--gold)}
+textarea,input[type=text],input[type=password]{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;color:var(--txt);font:inherit;font-size:17px;padding:13px 15px;outline:none;resize:none;line-height:1.4}
+textarea::placeholder,input::placeholder{color:var(--dim)}
+textarea:focus,input:focus{border-color:var(--soft)}
+textarea{min-height:52px}
+
+.save{width:100%;border:0;border-radius:16px;padding:18px;background:var(--a);color:var(--a-ink);font:600 17px 'Inter',sans-serif;transition:transform .1s,background .2s,color .2s}
+.save:active{transform:scale(.985)} .save[disabled]{background:var(--card);color:var(--dim);border:1.5px solid var(--line)}
+.after{text-align:center;font-size:15px;color:var(--soft);margin-top:14px;min-height:22px}
+.tags{margin-top:10px}
+.tags input{text-align:center;background:transparent;border:0;border-bottom:1.5px solid var(--line);border-radius:0;padding:8px 0;font-size:15px;color:var(--soft)}
+
+.week{margin-top:54px;padding-top:30px;border-top:1px solid var(--line)}
+.nav{display:flex;justify-content:space-between;align-items:center}
+.nav button{background:none;border:0;color:var(--soft);font:500 15px 'Inter',sans-serif;padding:8px 2px}
+.nav button:disabled{color:var(--dim)}
+.nav .ttl{font:italic 300 19px 'Fraunces',serif;color:var(--txt)}
+.grid{display:grid;grid-template-columns:74px repeat(7,1fr);gap:10px 6px;align-items:center;margin-top:18px}
+.grid .lab{font-size:13px;color:var(--soft)}
+.grid .dn{text-align:center;font-size:14px;color:var(--dim)}
+.grid .dn.today{color:var(--txt);font-weight:600}
+.cell{aspect-ratio:1;border-radius:50%;background:var(--card);border:1.5px solid var(--line);margin:0 auto;width:min(100%,34px);display:flex;align-items:center;justify-content:center;font:600 13px 'Inter',sans-serif;color:var(--bg)}
 .cell.has{border-color:transparent}
 .cell.v0,.cell.v1{color:var(--txt)}
-.note{min-height:22px;font-size:13px;color:var(--fade);margin-top:14px;line-height:1.45}
+.note{font-size:16px;color:var(--soft);margin-top:18px;line-height:1.55;min-height:24px}
 .note b{color:var(--txt);font-weight:600}
-.nav{display:flex;justify-content:space-between;align-items:center}
-.nav button{background:none;border:0;color:var(--fade);font:500 13px 'Inter',sans-serif;padding:8px 4px}
-.nav button:disabled{color:var(--dim)}
-details{margin-top:40px;border-top:1px solid var(--line);padding-top:16px}
-summary{list-style:none;font-size:13px;color:var(--fade);display:flex;justify-content:space-between;cursor:pointer}
+.insight{font:italic 300 18px/1.5 'Fraunces',serif;color:var(--soft);margin-top:22px}
+.insight b{font-style:normal;font-weight:500;color:var(--txt)}
+
+details{margin-top:46px;border-top:1px solid var(--line);padding-top:18px}
+summary{list-style:none;font-size:15px;color:var(--soft);display:flex;justify-content:space-between;cursor:pointer}
 summary::-webkit-details-marker{display:none}
 summary em{font-style:normal;color:var(--dim)}
-.gh p{font-size:13px;color:var(--fade);line-height:1.5;margin:14px 0}
-.gh label{display:block;font-size:12px;color:var(--fade);margin:10px 0}
-.gh input{margin-top:5px;font-size:14px}
+.gh p{font-size:15px;color:var(--soft);line-height:1.55;margin:16px 0}
+.gh label{display:block;font-size:14px;color:var(--soft);margin:12px 0}
+.gh input{margin-top:6px;font-size:15px}
 .row{display:flex;gap:8px;margin-top:14px}
-.row button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 0;font:500 14px 'Inter',sans-serif}
-.gh .st{font-size:12px;color:var(--dim);margin-top:12px;min-height:16px}
-.toast{position:fixed;left:50%;bottom:calc(var(--sab) + 24px);transform:translate(-50%,20px);background:var(--txt);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center}
+.row button{flex:1;background:var(--card);border:1.5px solid var(--line);color:var(--txt);border-radius:12px;padding:12px 0;font:500 15px 'Inter',sans-serif}
+.gh .st{font-size:14px;color:var(--dim);margin-top:12px;min-height:16px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:calc(var(--sab) + 26px);transform:translate(-50%,20px);background:var(--txt);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:15px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
+<canvas id="sky" aria-hidden="true"></canvas>
 
 <div class="top">
- <div><div class="eyebrow" id="slot">—</div><h1 id="date">Energy</h1></div>
- <div class="sync off" id="syncDot"></div>
+ <div><div class="when" id="when">—</div><h1 id="slot">Energy</h1></div>
+ <div class="sync" id="syncDot"></div>
 </div>
 
-<p class="q">How much is in the tank right now?</p>
-<div class="big none" id="big">–</div>
-<div class="dots" id="dots" role="slider" aria-valuemin="0" aria-valuemax="10" aria-label="Energy"></div>
+<p class="q">How much is in the tank?</p>
+<div class="hero">
+ <div class="moon" aria-hidden="true"><i id="fill"></i></div>
+ <div><div class="num none serif" id="num">–</div><div class="word" id="word"></div></div>
+</div>
+<div class="dots" id="dots" role="slider" aria-valuemin="0" aria-valuemax="10" aria-label="Energy, 0 empty to 10 full"></div>
 <div class="ends"><span>empty</span><span>full</span></div>
 
-<label class="f"><span>What drained it in the last few hours?</span><textarea id="drain" rows="1" enterkeyhint="done"></textarea></label>
-<label class="f"><span>What added to it?</span><textarea id="add" rows="1" enterkeyhint="done"></textarea></label>
+<div class="sec drain">
+ <p class="q">What drained it in the last few hours?</p>
+ <div class="chips" id="drainChips"></div>
+ <textarea id="drain" rows="1" placeholder="or say it in your own words" enterkeyhint="done"></textarea>
+</div>
 
-<p class="q" style="margin-bottom:10px">Anything your body is asking for?</p>
-<div class="chips">
- <div class="chip" data-k="water">water</div>
- <div class="chip" data-k="bathroom">bathroom</div>
- <div class="chip" data-k="food">food</div>
+<div class="sec add">
+ <p class="q">What added to it?</p>
+ <div class="chips" id="addChips"></div>
+ <textarea id="add" rows="1" placeholder="or say it in your own words" enterkeyhint="done"></textarea>
+</div>
+
+<div class="sec body">
+ <p class="q">Is your body asking for anything?</p>
+ <p class="hint">Check before you decide. Thirst and hunger are easy to miss.</p>
+ <div class="chips" id="bodyChips"></div>
 </div>
 
 <button class="save" id="save" disabled>Save</button>
-<div class="tags"><input id="tags" type="text" placeholder="tags · optional" autocapitalize="off" autocorrect="off"></div>
+<div class="after" id="after"></div>
+<div class="tags"><input id="tags" type="text" placeholder="private tags, optional" autocapitalize="off" autocorrect="off"></div>
 
 <div class="week">
- <div class="nav"><button id="prev">‹ earlier</button><div class="eyebrow" id="wk"></div><button id="next" disabled>later ›</button></div>
+ <div class="nav"><button id="prev">‹ earlier</button><div class="ttl" id="wk"></div><button id="next" disabled>later ›</button></div>
  <div class="grid" id="grid"></div>
  <div class="note" id="note"></div>
+ <div class="insight" id="insight"></div>
 </div>
 
 <details id="ghBox" class="gh">
@@ -133,39 +166,88 @@ function pad(n){ return (n < 10 ? '0' : '') + n; }
 function localISO(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 function dayOf(t){ return t.slice(0,10); }
 function todayStr(){ return localISO(new Date()).slice(0,10); }
-
-// Slot comes from the clock, never from a picker.
-var SLOTS = ['morning','midday','afternoon','evening'];
-function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 11 ? 0 : h < 14.5 ? 1 : h < 19 ? 2 : 3; }
-
 var _toastT;
 function toast(m){ var t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_toastT); _toastT = setTimeout(function(){ t.classList.remove('show'); }, 2200); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(ch){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]; }); }
+
+// Slot comes from the clock, never from a picker. Windows sit late on purpose.
+var SLOTS = ['morning','midday','afternoon','evening'];
+var SLOT_Q = ['Since you woke up', 'Since mid-morning', 'Since lunch', 'Since dinner'];
+function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 12 ? 0 : h < 15 ? 1 : h < 20 ? 2 : 3; }
+
+// Six flat steps, each a meaning: night-violet at rest, ice in the middle, mint is good, gold then amber is lit.
+var STOPS = ['#3a2d5c','#8b6fd6','#bcd3ff','#21f6bc','#ffd36b','#f5a623'];
+var INKS  = ['#efe9ff','#efe9ff','#0b0914','#0b0914','#0b0914','#0b0914'];
+var WORDS = ['running on empty','running on empty','low','low','getting by','getting by','steady','good','good','lit up','lit up'];
+function step(v){ return Math.min(5, Math.floor(v / 2)); }
+function shade(v){ return STOPS[step(v)]; }
+
+// ── sky: a few hundred crisp stars, seeded so they never move ───────
+(function sky(){
+ var c = document.getElementById('sky'), x = c.getContext('2d');
+ function draw(){
+  var w = innerWidth, h = innerHeight, r = devicePixelRatio || 1; c.width = w * r; c.height = h * r; x.setTransform(r, 0, 0, r, 0, 0); x.clearRect(0, 0, w, h);
+  var s = 7;
+  function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
+  for (var i = 0; i < 260; i++){
+   var px = rnd() * w, py = rnd() * h, k = rnd(), sz = k > .96 ? 2 : k > .8 ? 1.5 : 1;
+   x.fillStyle = k > .985 ? 'rgba(188,211,255,.9)' : 'rgba(226,214,255,' + (0.18 + rnd() * 0.5).toFixed(2) + ')';
+   x.fillRect(Math.round(px), Math.round(py), sz, sz);
+  }
+ }
+ draw(); addEventListener('resize', draw);
+})();
 
 // ── header ───────────────────────────────────────────────────────────
 function paintHead(){
- var d = new Date();
- document.getElementById('slot').textContent = SLOTS[slotFor(d)];
- document.getElementById('date').textContent = d.toLocaleDateString(undefined, { weekday:'long' });
+ var d = new Date(), s = slotFor(d);
+ document.getElementById('slot').textContent = d.toLocaleDateString(undefined, { weekday:'long' }) + ' ' + SLOTS[s];
+ document.getElementById('when').textContent = d.toLocaleDateString(undefined, { month:'long', day:'numeric' });
+ document.querySelector('.sec.drain .q').textContent = SLOT_Q[s] + ', what drained it?';
 }
 
-// ── slider ───────────────────────────────────────────────────────────
+// ── slider + moon ────────────────────────────────────────────────────
 var val = null, dots = document.getElementById('dots');
 for (var i = 0; i <= 10; i++){ var el = document.createElement('div'); el.className = 'dot'; el.dataset.v = i; dots.appendChild(el); }
+function tint(v){ var r = document.documentElement.style; if (v === null){ r.removeProperty('--a'); r.removeProperty('--a-ink'); return; } r.setProperty('--a', shade(v)); r.setProperty('--a-ink', INKS[step(v)]); }
 function setVal(v, quiet){
- v = Math.max(0, Math.min(10, v));
- if (v === val) return; val = v;
+ v = Math.max(0, Math.min(10, v)); if (v === val) return; val = v;
  Array.prototype.forEach.call(dots.children, function(el){ var n = +el.dataset.v; el.classList.toggle('lit', n <= v); el.classList.toggle('pick', n === v); });
- var big = document.getElementById('big'); big.textContent = v; big.classList.remove('none'); tint(v);
+ tint(v);
+ var num = document.getElementById('num'); num.textContent = v; num.classList.remove('none');
+ document.getElementById('word').textContent = WORDS[v];
+ document.getElementById('fill').style.height = (v * 10) + '%';
  dots.setAttribute('aria-valuenow', v);
  document.getElementById('save').disabled = false;
  if (!quiet && navigator.vibrate) navigator.vibrate(4);
 }
-function onPt(e){ var x = (e.touches ? e.touches[0] : e).clientX; var r = dots.getBoundingClientRect(); setVal(Math.floor((x - r.left) / (r.width / 11))); }
+function onPt(e){ var r = dots.getBoundingClientRect(); setVal(Math.floor((e.clientX - r.left) / (r.width / 11))); }
 dots.addEventListener('pointerdown', function(e){ dots.setPointerCapture(e.pointerId); onPt(e); });
 dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); });
 
 // ── chips ────────────────────────────────────────────────────────────
-Array.prototype.forEach.call(document.querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); }); });
+// Starters come from what women with ADHD most often name. Her own words join once she has used them twice.
+var START = {
+ drain:['meetings','people','screens','masking','noise','hunger','poor sleep','sitting','task switching','waiting','conflict','stuck on a task'],
+ add:['walk','outside','music','a nap','alone time','a friend','food','moving my body','sun','a win','a shower','hyperfocus'],
+ body:['water','bathroom','food','rest','move','warmth','quiet']
+};
+function learned(kind){
+ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24) cnt[w] = (cnt[w] || 0) + 1; }); });
+ return Object.keys(cnt).filter(function(w){ return cnt[w] >= 2 && START[kind].indexOf(w) < 0; }).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 6);
+}
+function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
+function paintChips(){
+ ['drain','add','body'].forEach(function(kind){
+  var box = document.getElementById(kind + 'Chips'), u = usage(kind);
+  var list = learned(kind).concat(START[kind]);
+  if (kind !== 'body') list.sort(function(a,b){ return (u[b] || 0) - (u[a] || 0); });
+  list = list.slice(0, kind === 'body' ? 7 : 8);
+  box.innerHTML = list.map(function(w){ return '<span class="chip" data-w="' + esc(w) + '">' + esc(w) + '</span>'; }).join('');
+  Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
+ });
+}
+function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySelectorAll('#' + kind + 'Chips .chip.on'), function(c){ a.push(c.dataset.w); }); return a; }
 
 // ── save ─────────────────────────────────────────────────────────────
 document.getElementById('save').addEventListener('click', function(){
@@ -173,28 +255,26 @@ document.getElementById('save').addEventListener('click', function(){
  var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], e:val };
  var dr = document.getElementById('drain').value.trim(), ad = document.getElementById('add').value.trim(), tg = document.getElementById('tags').value.trim();
  if (dr) e.drain = dr; if (ad) e.add = ad; if (tg) e.tags = tg.split(/[,\s]+/).filter(Boolean);
- var body = []; Array.prototype.forEach.call(document.querySelectorAll('.chip.on'), function(c){ body.push(c.dataset.k); });
- if (body.length) e.body = body;
+ var dc = picked('drain'), ac = picked('add'), bc = picked('body');
+ if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var a = readLog(); a.push(e); writeLog(a);
- resetForm(); paintWeek(); toast('Saved');
+ resetForm(); paintChips(); paintWeek();
+ var n = a.filter(function(x){ return dayOf(x.t) === todayStr(); }).length;
+ document.getElementById('after').textContent = 'Saved. ' + n + (n === 1 ? ' check-in' : ' check-ins') + ' today.';
+ if (bc.length) toast(bc.length === 1 ? 'Go get ' + bc[0] + '.' : 'Go take care of that.');
  store.set('en-dirty', '1'); ghPush(1);
 });
 function resetForm(){
- val = null; var r = document.documentElement.style; r.removeProperty('--a'); r.removeProperty('--a-dim'); Array.prototype.forEach.call(dots.children, function(el){ el.className = 'dot'; });
- var big = document.getElementById('big'); big.textContent = '–'; big.classList.add('none');
+ val = null; tint(null); Array.prototype.forEach.call(dots.children, function(el){ el.className = 'dot'; });
+ var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
+ document.getElementById('word').textContent = ''; document.getElementById('fill').style.height = 0;
  ['drain','add','tags'].forEach(function(id){ document.getElementById(id).value = ''; });
- Array.prototype.forEach.call(document.querySelectorAll('.chip.on'), function(c){ c.classList.remove('on'); });
  document.getElementById('save').disabled = true;
 }
 
-// ── week grid ────────────────────────────────────────────────────────
+// ── week + what it says ──────────────────────────────────────────────
 var wkOff = 0;
 function monday(d){ var x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
-// Six flat steps, each a meaning: night-violet at rest, ice in the middle, mint is good, gold then amber is lit.
-var STOPS = ['#3a2d5c','#8b6fd6','#bcd3ff','#21f6bc','#ffd36b','#f5a623'];
-function shade(v){ return STOPS[Math.min(5, Math.floor(v / 2))]; }
-function hexA(hx, a){ var n = parseInt(hx.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
-function tint(v){ var r = document.documentElement.style, c = shade(v); r.setProperty('--a', c); r.setProperty('--a-dim', hexA(c, .2)); }
 function paintWeek(){
  var m = monday(new Date()); m.setDate(m.getDate() + wkOff * 7);
  var days = []; for (var i = 0; i < 7; i++){ var d = new Date(m); d.setDate(m.getDate() + i); days.push(localISO(d).slice(0,10)); }
@@ -203,9 +283,9 @@ function paintWeek(){
  var g = document.getElementById('grid'), tod = todayStr(), h = '<div></div>';
  days.forEach(function(ds){ var d = new Date(ds + 'T12:00:00'); h += '<div class="dn' + (ds === tod ? ' today' : '') + '">' + 'MTWTFSS'[(d.getDay()+6)%7] + '</div>'; });
  SLOTS.forEach(function(s){
-  h += '<div class="lab">' + s.slice(0,3) + '</div>';
+  h += '<div class="lab">' + s + '</div>';
   days.forEach(function(ds){ var e = by[ds + '|' + s];
-   h += e ? '<div class="cell has v' + Math.floor(e.e / 2) + '" data-k="' + ds + '|' + s + '" style="background:' + shade(e.e) + '">' + e.e + '</div>' : '<div class="cell"></div>'; });
+   h += e ? '<div class="cell has v' + step(e.e) + '" data-k="' + ds + '|' + s + '" style="background:' + shade(e.e) + '">' + e.e + '</div>' : '<div class="cell"></div>'; });
  });
  g.innerHTML = h;
  var e0 = new Date(days[0] + 'T12:00:00'), e6 = new Date(days[6] + 'T12:00:00'), f = { month:'short', day:'numeric' };
@@ -213,14 +293,30 @@ function paintWeek(){
  document.getElementById('next').disabled = wkOff >= 0;
  document.getElementById('note').innerHTML = '';
  Array.prototype.forEach.call(g.querySelectorAll('.cell.has'), function(c){ c.addEventListener('click', function(){ showNote(by[c.dataset.k]); }); });
+ paintInsight(log);
 }
-function esc(s){ return String(s).replace(/[&<>]/g, function(ch){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;' }[ch]; }); }
 function showNote(e){
  var d = new Date(e.t), p = [];
- p.push('<b>' + e.e + '</b> · ' + d.toLocaleDateString(undefined, { weekday:'short' }) + ' ' + e.slot + ' · ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }));
- if (e.drain) p.push('<b>drained</b> ' + esc(e.drain)); if (e.add) p.push('<b>added</b> ' + esc(e.add));
- if (e.body) p.push('<b>body</b> ' + e.body.join(', ')); if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
+ p.push('<b>' + e.e + ' · ' + WORDS[e.e] + '</b> · ' + d.toLocaleDateString(undefined, { weekday:'short' }) + ' ' + e.slot + ', ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }));
+ var dr = (e.drainChips || []).concat(e.drain ? [e.drain] : []), ad = (e.addChips || []).concat(e.add ? [e.add] : []);
+ if (dr.length) p.push('<b>drained</b> ' + esc(dr.join(', '))); if (ad.length) p.push('<b>added</b> ' + esc(ad.join(', ')));
+ if (e.body) p.push('<b>body wanted</b> ' + esc(e.body.join(', '))); if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
  document.getElementById('note').innerHTML = p.join('<br>');
+}
+// Only plain counts and means over the last 28 days. Nothing here claims a cause.
+function paintInsight(log){
+ var box = document.getElementById('insight'), cut = new Date(); cut.setDate(cut.getDate() - 28);
+ var rec = log.filter(function(e){ return new Date(e.t) >= cut; });
+ if (rec.length < 8){ box.innerHTML = rec.length ? 'After ' + (8 - rec.length) + ' more check-ins this will start to say something.' : ''; return; }
+ var bySlot = {}; rec.forEach(function(e){ (bySlot[e.slot] = bySlot[e.slot] || []).push(e.e); });
+ var means = SLOTS.filter(function(s){ return bySlot[s] && bySlot[s].length >= 2; }).map(function(s){ var a = bySlot[s]; return { s:s, m:a.reduce(function(x,y){ return x+y; }, 0) / a.length }; }).sort(function(a,b){ return b.m - a.m; });
+ var cnt = function(k){ var c = {}; rec.forEach(function(e){ (e[k] || []).forEach(function(w){ c[w] = (c[w] || 0) + 1; }); }); var top = Object.keys(c).sort(function(a,b){ return c[b] - c[a]; })[0]; return top ? { w:top, n:c[top] } : null; };
+ var d = cnt('drainChips'), a = cnt('addChips'), b = cnt('body'), p = [];
+ if (means.length >= 2) p.push('Last four weeks, <b>' + means[0].s + 's</b> run highest (' + means[0].m.toFixed(1) + ') and <b>' + means[means.length-1].s + 's</b> lowest (' + means[means.length-1].m.toFixed(1) + ').');
+ if (d) p.push('Most-named drain: <b>' + esc(d.w) + '</b>, ' + d.n + ' times.');
+ if (a) p.push('Most-named lift: <b>' + esc(a.w) + '</b>, ' + a.n + ' times.');
+ if (b && b.n >= 3) p.push('Your body asked for <b>' + esc(b.w) + '</b> ' + b.n + ' times.');
+ box.innerHTML = p.join(' ');
 }
 document.getElementById('prev').addEventListener('click', function(){ wkOff--; paintWeek(); });
 document.getElementById('next').addEventListener('click', function(){ wkOff++; paintWeek(); });
@@ -315,7 +411,7 @@ document.getElementById('ghSave').addEventListener('click', function(){
 document.getElementById('ghNow').addEventListener('click', function(){ if (!readGH()){ toast('Connect first'); return; } ghPull().then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } }); });
 document.getElementById('ghOff').addEventListener('click', function(){ if (!readGH()) return; if (!confirm('Forget the token on this device? Everything already synced stays in the repo.')) return; writeGH(null); paintGH(); toast('Forgotten'); });
 
-paintHead(); paintWeek(); paintGH();
+paintHead(); paintChips(); paintWeek(); paintGH();
 if (readGH()) ghPull(1).then(function(){ flush(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
 </script>
