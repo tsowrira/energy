@@ -39,10 +39,10 @@ h1{ font:italic 400 40px/1.05 var(--serif); margin:4px 0 0; letter-spacing:-.01e
 .q{ font:italic 400 24px/1.25 var(--serif); margin:0 0 14px; color:var(--ink); }
 .hint{ color:var(--mute); font-size:14px; margin:-6px 0 14px; }
 
-.dialWrap{ position:relative; width:min(300px, 78vw); margin:6px auto 2px; }
-#dial{ width:100%; height:auto; }
+.fieldWrap{ position:relative; width:calc(100% + 36px); margin:0 -18px 2px; height:330px; touch-action:none; cursor:ns-resize; }
+#field{ width:100%; height:100%; }
 .mid{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-.num{ font:300 68px/1 var(--serif); color:var(--a); font-variant-numeric:tabular-nums; }
+.num{ font:300 76px/1 var(--serif); color:var(--a); font-variant-numeric:tabular-nums; }
 .num.none{ color:var(--line); }
 .word{ text-align:center; font:italic 300 22px/1.3 var(--serif); color:var(--ink); min-height:30px; margin:6px 0 18px; }
 
@@ -102,10 +102,10 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="sync" id="syncDot"></div>
 </div>
 
-<p class="k">i · the tank</p>
-<p class="q">how much is in it right now?</p>
-<div class="dialWrap">
- <canvas id="dial" width="300" height="300" aria-hidden="true"></canvas>
+<p class="k">i · the field</p>
+<p class="q">how much is in you right now?</p>
+<div class="fieldWrap" id="fieldWrap">
+ <canvas id="field" aria-hidden="true"></canvas>
  <div class="mid"><div class="num none" id="num">–</div></div>
 </div>
 <div class="word" id="word"></div>
@@ -216,32 +216,64 @@ function paintHead(){
  document.getElementById('todayStrip').innerHTML = SLOTS.map(function(k, i){ var e = done[k]; return '<i' + (e ? ' style="background:' + shade(e.e) + ';border-color:' + shade(e.e) + '"' : i === s ? ' class="now"' : '') + '></i>'; }).join('');
 }
 
-// ── dial: today folded onto one clock, midnight at the top ───────────
-var dial = document.getElementById('dial');
-function ang(h){ return h / 24 * Math.PI * 2 - Math.PI / 2; }
-function paintDial(){
- var W = dial.clientWidth || 300, r = dpr(), x = dial.getContext('2d');
- dial.width = W * r; dial.height = W * r; x.setTransform(r, 0, 0, r, 0, 0); x.clearRect(0, 0, W, W);
- var cx = W / 2, cy = W / 2, R = W / 2 - 26, r0 = R * .46, now = new Date(), nh = now.getHours() + now.getMinutes() / 60;
- var i, a;
- for (i = 0; i < 96; i++){
-  a = ang(i / 4); var hr = i % 4 === 0, bd = hr && SLOT_H.indexOf(i / 4) >= 0 || i === 0;
-  x.fillStyle = bd ? css('--orchid') : hr ? 'rgba(189,166,255,.55)' : 'rgba(189,166,255,.22)';
-  var sz = bd ? 3 : hr ? 2 : 1.5;
-  x.fillRect(Math.round(cx + Math.cos(a) * R - sz / 2), Math.round(cy + Math.sin(a) * R - sz / 2), sz, sz);
+// ── the field: a manifold of points that breathes with the number ────
+// Empty is a thin, slow, dim ring. Full is a warped, fast, warm cloud.
+var field = (function(){
+ var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap');
+ var N = 2600, P = [], cur = { t:-1, m:0 }, tgt = { t:-1 }, last = 0, run = true, W = 0, H = 0, rot = 0;
+ var s = 11; function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
+ for (var i = 0; i < N; i++) P.push({ u:rnd() * Math.PI * 2, v:rnd() * Math.PI * 2, k:rnd(), j:rnd() * Math.PI * 2, halo:i < 180 });
+ function size(){ W = wrap.clientWidth; H = wrap.clientHeight; var r = dpr(); c.width = W * r; c.height = H * r; x.setTransform(r, 0, 0, r, 0, 0); }
+ function hex(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+ var RAMP = STOPS.map(hex), MUTE = hex('#5a4a8a'), INK = hex('#f0eaff');
+ function mixc(a, b, f){ return [a[0]+(b[0]-a[0])*f|0, a[1]+(b[1]-a[1])*f|0, a[2]+(b[2]-a[2])*f|0]; }
+ function frame(now){
+  if (!run) return;
+  var dt = Math.min(.05, (now - last) / 1000 || 0); last = now;
+  // ease toward the target: the number changes, the field follows
+  if (tgt.t < 0) cur.t += (-.15 - cur.t) * Math.min(1, dt * 2.5); else cur.t += (tgt.t - cur.t) * Math.min(1, dt * 2.5);
+  var t = Math.max(0, cur.t), none = tgt.t < 0;
+  var speed = .06 + .55 * t * t, warp = .04 + .55 * t, tube = .10 + .30 * t, Rm = .62 + .14 * t;
+  rot += dt * (.05 + .25 * t);
+  var sc = Math.min(W, H) * .46 * (1 + .025 * Math.sin(now / 1000 * (.6 + t)));
+  var tilt = 1.05 - .35 * t, ct = Math.cos(tilt), st = Math.sin(tilt), cr = Math.cos(rot), sr = Math.sin(rot);
+  var k0 = Math.min(5, Math.floor(t * 10 / 2 + 1e-9)), base = none ? MUTE : RAMP[k0], up = none ? MUTE : RAMP[Math.min(5, k0 + 1)], lo = none ? MUTE : RAMP[Math.max(0, k0 - 1)];
+  x.clearRect(0, 0, W, H);
+  var cx = W / 2, cy = H / 2, i, p;
+  for (i = 0; i < N; i++){
+   p = P[i];
+   p.u += dt * speed * (.6 + p.k * .8); p.v += dt * .12 * (.5 + p.k); p.j += dt * .4;
+   var X, Y, Z;
+   if (p.halo){ var hr = 1.15 + p.k * .55; X = Math.cos(p.u * .3) * hr; Y = Math.sin(p.u * .3) * hr; Z = Math.sin(p.j) * .35; }
+   else {
+    var r = tube * (.4 + p.k * .6), ring = Rm + r * Math.cos(p.v);
+    X = ring * Math.cos(p.u); Y = ring * Math.sin(p.u);
+    Z = r * Math.sin(p.v) + warp * Math.sin(3 * p.u + p.j * .2) * (.5 + .5 * Math.cos(p.v)) + warp * .35 * Math.sin(5 * p.u);
+   }
+   var x1 = X * cr - Z * sr, z1 = X * sr + Z * cr;
+   var y2 = Y * ct - z1 * st, z2 = Y * st + z1 * ct;
+   var d = (z2 + 1.2) / 2.4;
+   var col = p.k > .96 ? INK : p.k > .78 ? up : p.k < .14 ? lo : base;
+   var al = (p.halo ? .1 : .22) + d * (none ? .4 : .72) * (p.halo ? .5 : 1);
+   if (p.k > .96) al = Math.min(1, al + .3 + .3 * Math.sin(p.j * 3));
+   x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + al.toFixed(2) + ')';
+   var sz = d > .7 ? 2.5 : 1.5;
+   x.fillRect(cx + x1 * sc, cy + y2 * sc * .92, sz, sz);
+  }
+  requestAnimationFrame(frame);
  }
- x.fillStyle = css('--mute'); x.font = '11px ' + css('--mono'); x.textAlign = 'center'; x.textBaseline = 'middle';
- x.fillText('00', cx, cy - R - 11); x.fillText('12', cx, cy + R + 11); x.fillText('18', cx - R - 12, cy); x.fillText('06', cx + R + 12, cy);
- // the ring where "empty" sits, so a 0 still shows as a point
- x.strokeStyle = 'rgba(189,166,255,.1)'; x.lineWidth = 1; x.beginPath(); x.arc(cx, cy, r0, 0, Math.PI * 2); x.stroke();
- var pts = readLog().filter(function(e){ return dayOf(e.t) === todayStr(); }).map(function(e){ var h = hourOf(e.t), rr = r0 + (R - r0 - 6) * e.e / 10; return { x:cx + Math.cos(ang(h)) * rr, y:cy + Math.sin(ang(h)) * rr, c:shade(e.e) }; });
- if (pts.length > 1){ x.strokeStyle = 'rgba(139,111,214,.6)'; x.lineWidth = 1; x.beginPath(); pts.forEach(function(p, k){ k ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y); }); x.stroke(); }
- pts.forEach(function(p){ x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, 5, 0, Math.PI * 2); x.fill(); });
- // the hand: where now is, and where the point you are about to place would land
- a = ang(nh);
- x.strokeStyle = val === null ? 'rgba(189,166,255,.35)' : css('--a'); x.lineWidth = 1; x.beginPath(); x.moveTo(cx + Math.cos(a) * (r0 - 4), cy + Math.sin(a) * (r0 - 4)); x.lineTo(cx + Math.cos(a) * (R - 2), cy + Math.sin(a) * (R - 2)); x.stroke();
- if (val !== null){ var rv = r0 + (R - r0 - 6) * val / 10; x.strokeStyle = css('--a'); x.lineWidth = 1.5; x.beginPath(); x.arc(cx + Math.cos(a) * rv, cy + Math.sin(a) * rv, 6.5, 0, Math.PI * 2); x.stroke(); }
-}
+ function start(){ if (!run){ run = true; last = 0; requestAnimationFrame(frame); } }
+ function stop(){ run = false; }
+ size(); requestAnimationFrame(frame);
+ addEventListener('resize', size);
+ document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
+ if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ en[0].isIntersecting ? start() : stop(); }).observe(wrap);
+ function onPt(e){ var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); }
+ wrap.addEventListener('pointerdown', function(e){ wrap.setPointerCapture(e.pointerId); onPt(e); });
+ wrap.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); });
+ return { set:function(v){ tgt.t = v === null ? -1 : v / 10; } };
+})();
+function paintDial(){ field.set(val); }
 
 // ── slider ───────────────────────────────────────────────────────────
 var val = null, dots = document.getElementById('dots');
@@ -265,9 +297,9 @@ dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) o
 // ── chips ────────────────────────────────────────────────────────────
 // Starters are hers. Her own typed words join once she has used them twice.
 var START = {
- drain:['heavy conversation','late screens','poor sleep','work stress','a hard email','travel','feeling alone','overthinking','hard workout','family stuff','loud places','busy social day','masking','task switching','stuck on a task','hunger','late meal','meetings'],
- add:['a hike','walk','hot tub','singing','making a song','music','a good lift','skill play','meditation','cuddles','kind words','trees','a friend','laughing','building something','a treat','a good sleep','journaling','long exhale','sun','hyperfocus'],
- body:['water','bathroom','food','rest','move','warmth','quiet','tight back','tired eyes','too hot','shallow breath','racing heart','itchy ears','lightheaded']
+ drain:['overthinking','rushing','something unfair','being told what to do','waiting on a reply','a family call','noise i can\'t control','too many tabs open','late screens','poor sleep','work stress','a hard email','meetings','skipped a meal','loud places','masking','stuck on a task','feeling alone','travel'],
+ add:['singing','making a song','hot tub','a hike','walk','a good lift','skill play','meditation','loud music','pen and paper','drawing','crochet','trees','sun','cuddles','a friend','kind words','laughing','finishing something','doing nothing','a good sleep'],
+ body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
 function learned(kind){
  var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24) cnt[w] = (cnt[w] || 0) + 1; }); });
