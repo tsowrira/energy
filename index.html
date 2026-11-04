@@ -158,10 +158,12 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <details id="ghBox" class="gh">
  <summary>sync <em id="ghState">not connected</em></summary>
  <p>There is no server. Entries live in this browser and in a private repo you own. Make a <strong>fine-grained</strong> token with <strong>Contents: read and write</strong> on that one repo and nothing else.</p>
- <label>repo<input id="ghRepo" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="owner/name"></label>
- <label>token<input id="ghTok" type="password" autocomplete="off" placeholder="github_pat_…"></label>
- <div class="row"><button id="ghSave">Connect</button><button id="ghNow">Sync now</button><button id="ghOff">Forget</button></div>
- <div class="row"><button id="exportBtn">Export file</button></div>
+ <form id="ghForm" autocomplete="on">
+ <label>repo<input id="ghRepo" type="text" name="username" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" value="tsowrira/energyLog"></label>
+ <label>token<input id="ghTok" type="password" name="password" autocomplete="current-password" placeholder="github_pat_…"></label>
+ <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
+ </form>
+ <div class="row"><button id="exportBtn" type="button">Export file</button></div>
  <div class="st" id="ghNote"></div>
 </details>
 
@@ -542,7 +544,8 @@ document.addEventListener('visibilitychange', function(){ if (document.visibilit
 window.addEventListener('pagehide', flush);
 window.addEventListener('online', flush);
 
-document.getElementById('ghSave').addEventListener('click', function(){
+document.getElementById('ghForm').addEventListener('submit', function(ev){
+ ev.preventDefault();
  var repo = document.getElementById('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
  var tok = document.getElementById('ghTok').value.trim(), old = readGH();
  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)){ toast('Repo looks like owner/name'); return; }
