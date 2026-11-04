@@ -53,8 +53,10 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .ends{ display:flex; justify-content:space-between; color:var(--mute); font-size:13px; letter-spacing:.06em; margin:2px 0 0; }
 
 .sec{ margin-top:28px; }
-.more{ color:var(--mute); border-style:dashed; }
-.sec textarea{ display:none; } .sec.words textarea{ display:block; }
+.chip.more{ color:var(--mute); border-color:transparent; padding-left:4px; padding-right:4px; text-decoration:underline; text-underline-offset:4px; }
+.chip.own{ color:var(--mute); border-style:dashed; }
+.chip input{ background:none; border:0; outline:0; color:var(--ink); font:inherit; width:9em; padding:0; }
+.cyc summary{ font-size:13px; color:var(--mute); opacity:.75; } .cyc summary em{ color:var(--mute); }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
 .drain .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
@@ -75,7 +77,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .brWord{ position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center; font:italic 300 30px/1.2 var(--serif); color:var(--ink); pointer-events:none; }
 .brSub{ position:absolute; left:0; right:0; top:calc(50% + 28px); text-align:center; font-size:13px; letter-spacing:.08em; color:var(--mute); pointer-events:none; }
 .brX{ position:absolute; left:0; right:0; bottom:calc(30px + env(safe-area-inset-bottom)); text-align:center; font-size:14px; color:var(--mute); }
-.fold{ margin-top:22px; border-top:1px solid var(--line2); }
+.fold{ margin-top:22px; border-top:1px solid var(--line2); } .fold.cyc{ border-top:0; margin-top:30px; }
 .fold summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:12px 0; font-size:14px; }
 .fold summary::-webkit-details-marker{ display:none; } .fold summary em{ font-style:normal; color:var(--orchid); }
 .fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:10px 0 6px; }
@@ -131,13 +133,11 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <div class="sec drain">
  <p class="q">what drained it in the last few hours?</p>
  <div class="chips" id="drainChips"></div>
- <textarea id="drain" rows="1" placeholder="or in your own words" enterkeyhint="done"></textarea>
 </div>
 
 <div class="sec add">
  <p class="q">what added to it?</p>
  <div class="chips" id="addChips"></div>
- <textarea id="add" rows="1" placeholder="or in your own words" enterkeyhint="done"></textarea>
 </div>
 
 <div class="sec body">
@@ -146,12 +146,6 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="chips" id="bodyChips"></div>
 </div>
 
-<details class="fold cyc" id="cyc">
- <summary>cycle <em id="cycState"></em></summary>
- <p class="k2">flow</p><div class="chips one" id="cycFlow"></div>
- <p class="k2">cramps</p><div class="chips one" id="cycCramp"></div>
- <p class="k2">also</p><div class="chips" id="cycSx"></div>
-</details>
 <details class="fold" id="tagFold">
  <summary>tags <em id="tagState"></em></summary>
  <div class="tags"><div class="chips" id="tagChips"></div><input id="tags" type="text" placeholder="a word, then space" autocapitalize="off" autocorrect="off" enterkeyhint="done"></div>
@@ -170,6 +164,13 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="note" id="note"></div>
  <div class="insight" id="insight"></div>
 </div>
+
+<details class="fold cyc" id="cyc">
+ <summary>cycle <em id="cycState"></em></summary>
+ <p class="k2">flow</p><div class="chips one" id="cycFlow"></div>
+ <p class="k2">cramps</p><div class="chips one" id="cycCramp"></div>
+ <p class="k2">also</p><div class="chips" id="cycSx"></div>
+</details>
 
 <details id="ghBox" class="gh">
  <summary>sync <em id="ghState">not connected</em></summary>
@@ -422,20 +423,22 @@ function learned(kind){
  return Object.keys(cnt).filter(function(w){ return cnt[w] >= 2 && START[kind].indexOf(w) < 0; }).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 6);
 }
 function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
-var openKinds = {};
+var openKinds = {}, own = { drain:[], add:[], body:[] };
 function paintChips(){
  ['drain','add','body'].forEach(function(kind){
   var box = document.getElementById(kind + 'Chips'), on = {};
   Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
   var list = START[kind].concat(learned(kind)), full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
-  var show = full ? list : list.slice(0, 6);
-  var h = show.map(function(w){ return '<span class="chip' + (on[w] ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
-  if (!full) h.push('<span class="chip more" data-more="1">more</span>');
-  if (kind !== 'body') h.push('<span class="chip more" data-words="1">words</span>');
+  var show = (full ? list : list.slice(0, 6)).concat(own[kind].filter(function(w){ return list.indexOf(w) < 0; }));
+  var h = show.map(function(w){ return '<span class="chip' + (on[w] || own[kind].indexOf(w) >= 0 ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
+  if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
+  h.push('<span class="chip own" data-own="1">+ your own</span>');
   box.innerHTML = h.join('');
   Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
-   if (c.dataset.words){ var sec = box.parentNode; sec.classList.toggle('words'); if (sec.classList.contains('words')) sec.querySelector('textarea').focus(); return; }
+   if (c.dataset.own){ if (c.querySelector('input')) return; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; var inp = c.querySelector('input'); inp.focus();
+    var done = function(){ var w = inp.value.trim().toLowerCase().slice(0, 30); if (w && own[kind].indexOf(w) < 0) own[kind].push(w); paintChips(); };
+    inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); done(); } }); inp.addEventListener('blur', done); return; }
    c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
  });
 }
@@ -445,8 +448,7 @@ function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySe
 document.getElementById('save').addEventListener('click', function(){
  if (val === null) return;
  var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], e:val };
- var dr = document.getElementById('drain').value.trim(), ad = document.getElementById('add').value.trim(), tg = tagsPicked();
- if (dr) e.drain = dr; if (ad) e.add = ad; if (tg.length) e.tags = tg;
+ var tg = tagsPicked(); if (tg.length) e.tags = tg;
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
@@ -464,9 +466,9 @@ function resetForm(){
  val = null; tint(null); Array.prototype.forEach.call(dots.children, function(el){ el.className = 'dot'; });
  var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
  document.getElementById('word').textContent = '';
- ['drain','add','tags'].forEach(function(id){ document.getElementById(id).value = ''; }); tagNew = []; document.getElementById('tagChips').innerHTML = ''; paintTags();
+ document.getElementById('tags').value = ''; own = { drain:[], add:[], body:[] }; tagNew = []; document.getElementById('tagChips').innerHTML = ''; paintTags();
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'pick a number';
- openKinds = {}; document.querySelectorAll('.sec.words').forEach(function(x){ x.classList.remove('words'); });
+ openKinds = {};
  document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
  document.getElementById('cyc').open = false; document.getElementById('tagFold').open = false;
 }
