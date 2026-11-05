@@ -83,10 +83,6 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .fold summary::-webkit-details-marker{ display:none; } .fold summary em{ font-style:normal; color:var(--orchid); }
 .fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:10px 0 6px; }
 .cyc .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
-.tags{ padding-bottom:6px; }
-.tags .chips{ justify-content:center; margin-bottom:8px; }
-.tags .chip{ font-size:14px; padding:9px 12px; color:var(--mute); } .tags .chip.on{ background:var(--violet); border-color:var(--violet); color:var(--bg); }
-.tags input{ border-color:transparent; border-bottom-color:var(--line); border-radius:0; padding-left:0; padding-right:0; text-align:center; color:var(--mute); }
 
 .sky{ margin-top:40px; }
 .nav{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
@@ -150,10 +146,6 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <details class="fold" id="noteFold">
  <summary>a note <em id="noteState"></em></summary>
  <textarea id="jot" rows="3" placeholder="anything on your mind" enterkeyhint="done"></textarea>
-</details>
-<details class="fold" id="tagFold">
- <summary>tags <em id="tagState"></em></summary>
- <div class="tags"><div class="chips" id="tagChips"></div><input id="tags" type="text" placeholder="a word, then space" autocapitalize="off" autocorrect="off" enterkeyhint="done"></div>
 </details>
 
 <button class="save" id="save" disabled>save</button>
@@ -368,20 +360,6 @@ var breath = (function(){
 })();
 
 
-// ── tags: every word becomes a chip; past tags come back as chips ────
-var tagNew = [];
-function tagsSeen(){ var cnt = {}; readLog().forEach(function(e){ (e.tags || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return Object.keys(cnt).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 12); }
-function paintTags(){
- var box = document.getElementById('tagChips'), on = {}; Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
- var list = tagNew.concat(tagsSeen().filter(function(w){ return tagNew.indexOf(w) < 0; }));
- box.innerHTML = list.map(function(w){ var isOn = on[w] || tagNew.indexOf(w) >= 0; return '<span class="chip' + (isOn ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; }).join('');
- Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){ c.classList.toggle('on'); tagState(); }); }); tagState();
-}
-function tagState(){ document.getElementById('tagState').textContent = tagsPicked().join(' '); }
-function tagsPicked(){ var a = []; Array.prototype.forEach.call(document.querySelectorAll('#tagChips .chip.on'), function(c){ a.push(c.dataset.w); }); return a; }
-function tagCommit(){ var inp = document.getElementById('tags'); inp.value.split(/[,\s]+/).forEach(function(w){ w = w.trim().toLowerCase(); if (w && tagNew.indexOf(w) < 0) tagNew.push(w); }); inp.value = ''; paintTags(); }
-document.getElementById('tags').addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ',' || ev.key === ' '){ ev.preventDefault(); tagCommit(); } });
-document.getElementById('tags').addEventListener('blur', tagCommit);
 
 // ── slider ───────────────────────────────────────────────────────────
 var val = null, dots = document.getElementById('dots');
@@ -468,7 +446,6 @@ function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySe
 document.getElementById('save').addEventListener('click', function(){
  if (val === null) return;
  var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], e:val };
- var tg = tagsPicked(); if (tg.length) e.tags = tg;
  var nt = document.getElementById('jot').value.trim(); if (nt) e.note = nt;
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
@@ -487,11 +464,11 @@ function resetForm(){
  val = null; tint(null); Array.prototype.forEach.call(dots.children, function(el){ el.className = 'dot'; });
  var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
  document.getElementById('word').classList.remove('show');
- document.getElementById('tags').value = ''; own = { drain:[], add:[], body:[] }; tagNew = []; document.getElementById('tagChips').innerHTML = ''; paintTags();
+ own = { drain:[], add:[], body:[] };
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
  openKinds = {};
  document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
- document.getElementById('cyc').open = false; document.getElementById('tagFold').open = false; document.getElementById('noteFold').open = false; document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = '';
+ document.getElementById('cyc').open = false; document.getElementById('noteFold').open = false; document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = '';
 }
 
 // ── the sky: 28 days across, 24 hours down ───────────────────────────
@@ -540,7 +517,6 @@ function showNote(e){
  if (dr.length) p.push('<b>took</b> ' + esc(dr.join(', '))); if (ad.length) p.push('<b>gave</b> ' + esc(ad.join(', ')));
  if (e.body) p.push('<b>body wanted</b> ' + esc(e.body.join(', ')));
  if (e.cyc){ var cp = []; if (e.cyc.flow) cp.push(CYC.flow[e.cyc.flow]); if (e.cyc.cramp) cp.push(CYC.cramp[e.cyc.cramp] + ' cramps'); if (e.cyc.sx) cp = cp.concat(e.cyc.sx); if (cp.length) p.push('<b>cycle</b> ' + esc(cp.join(', '))); }
- if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
  if (e.note) p.push('<i>' + esc(e.note) + '</i>');
  document.getElementById('note').innerHTML = p.join('<br>');
 }
@@ -616,7 +592,7 @@ function ghPull(quiet){
   var cc = readGH(); if (!cc) return 0;
   cc.sha = j.sha; delete cc.err; writeGH(cc);
   var data = null; try { data = JSON.parse(b64dec(j.content)); } catch(e){ throw new Error('log.json in the repo is not valid JSON.'); }
-  var n = merge(data); if (n){ paintHead(); paintChips(); paintCyc(); paintTags(); paintDial(); paintSky(); } paintGH(); return n;
+  var n = merge(data); if (n){ paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); } paintGH(); return n;
  }).catch(function(e){ if (offline(e)) return false; var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
 }
 var busy = null;
@@ -662,7 +638,7 @@ document.getElementById('ghNow').addEventListener('click', function(){ if (!read
 document.getElementById('ghOff').addEventListener('click', function(){ if (!readGH()) return; if (!confirm('Forget the token on this device? Everything already synced stays in the repo.')) return; writeGH(null); paintGH(); toast('Forgotten'); });
 
 dirtySeq = +(store.get('en-dirty') || 0);
-paintHead(); paintChips(); paintCyc(); paintTags(); paintDial(); paintSky(); paintGH();
+paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); paintGH();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ paintDial(); paintSky(); });
 if (readGH()) ghPull(1).then(function(){ flush(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
