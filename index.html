@@ -101,6 +101,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .note{ margin-top:14px; padding:14px; border:1px solid var(--line); border-radius:6px; font-size:15px; line-height:1.6; display:none; }
 .note.show{ display:block; }
 .note b{ font-weight:500; color:var(--orchid); }
+.note s{ display:inline-block; text-decoration:none; border:1px solid var(--line); border-radius:999px; padding:2px 9px; margin:2px 4px 2px 0; font-size:13px; }
 .insight{ margin-top:18px; font-size:15px; line-height:1.65; color:var(--ink); }
 .insight b{ font-weight:500; color:var(--mint); }
 
@@ -449,7 +450,7 @@ function paintChips(){
   Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
    if (c.dataset.own){ if (c.querySelector('input')) return; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; var inp = c.querySelector('input'); inp.focus();
-    var done = function(){ var w = inp.value.trim().toLowerCase().slice(0, 30); if (w && own[kind].indexOf(w) < 0) own[kind].push(w); paintChips(); };
+    var done = function(){ inp.value.split(',').forEach(function(w){ w = w.trim().toLowerCase().slice(0, 30); if (w && own[kind].indexOf(w) < 0) own[kind].push(w); }); paintChips(); };
     inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); done(); } }); inp.addEventListener('blur', done); return; }
    c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
  });
@@ -528,9 +529,10 @@ function showNote(e){
  var d = new Date(e.t), p = [];
  p.push('<b>' + e.e + ' · ' + WORDS[e.e] + '</b> · ' + d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }).toLowerCase() + ', ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }).toLowerCase());
  var dr = (e.drainChips || []).concat(e.drain ? [e.drain] : []), ad = (e.addChips || []).concat(e.add ? [e.add] : []);
- if (dr.length) p.push('<b>took</b> ' + esc(dr.join(', '))); if (ad.length) p.push('<b>gave</b> ' + esc(ad.join(', ')));
- if (e.body) p.push('<b>body wanted</b> ' + esc(e.body.join(', ')));
- if (e.cyc){ var cp = []; if (e.cyc.flow) cp.push(CYC.flow[e.cyc.flow]); if (e.cyc.cramp) cp.push(CYC.cramp[e.cyc.cramp] + ' cramps'); if (e.cyc.sx) cp = cp.concat(e.cyc.sx); if (cp.length) p.push('<b>cycle</b> ' + esc(cp.join(', '))); }
+ function pills(a){ return a.map(function(w){ return '<s>' + esc(w) + '</s>'; }).join(''); }
+ if (dr.length) p.push('<b>took</b><br>' + pills(dr)); if (ad.length) p.push('<b>gave</b><br>' + pills(ad));
+ if (e.body) p.push('<b>body wanted</b><br>' + pills(e.body));
+ if (e.cyc){ var cp = []; if (e.cyc.flow) cp.push(CYC.flow[e.cyc.flow]); if (e.cyc.cramp) cp.push(CYC.cramp[e.cyc.cramp] + ' cramps'); if (e.cyc.sx) cp = cp.concat(e.cyc.sx); if (cp.length) p.push('<b>cycle</b><br>' + pills(cp)); }
  if (e.note) p.push('<i>' + esc(e.note) + '</i>');
  document.getElementById('note').innerHTML = p.join('<br>');
 }
