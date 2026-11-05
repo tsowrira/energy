@@ -68,7 +68,7 @@ textarea{ resize:none; min-height:48px; }
 textarea:focus,input:focus{ border-color:var(--orchid); }
 ::placeholder{ color:var(--mute); opacity:.8; }
 
-.save{ position:sticky; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:5; display:block; width:100%; margin:28px 0 10px; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
+.save{ display:block; width:100%; margin:28px 0 10px; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
 .save:disabled{ background:var(--bg); color:var(--mute); border-color:var(--line); opacity:.45; }
 .after{ text-align:center; color:var(--mint); font-size:14px; min-height:22px; } .after a{ color:var(--orchid); text-decoration:underline; text-underline-offset:3px; margin-left:8px; cursor:pointer; }
 .calm{ text-align:center; margin-top:10px; font-size:14px; color:var(--mute); } .calm a{ display:inline-block; padding:12px 10px; color:var(--mute); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
@@ -147,6 +147,10 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="chips" id="bodyChips"></div>
 </div>
 
+<details class="fold" id="noteFold">
+ <summary>a note <em id="noteState"></em></summary>
+ <textarea id="jot" rows="3" placeholder="anything on your mind" enterkeyhint="done"></textarea>
+</details>
 <details class="fold" id="tagFold">
  <summary>tags <em id="tagState"></em></summary>
  <div class="tags"><div class="chips" id="tagChips"></div><input id="tags" type="text" placeholder="a word, then space" autocapitalize="off" autocorrect="off" enterkeyhint="done"></div>
@@ -395,6 +399,7 @@ function onPt(e){ var r = dots.getBoundingClientRect(); setVal(Math.floor((e.cli
 dots.addEventListener('pointerdown', function(e){ dots.setPointerCapture(e.pointerId); onPt(e); });
 dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); else if (e.pointerType === 'mouse'){ var r = dots.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.floor((e.clientX - r.left) / (r.width / 11))))); } });
 dots.addEventListener('pointerleave', function(){ field.set(val); });
+document.getElementById('jot').addEventListener('input', function(){ document.getElementById('noteState').textContent = this.value.trim() ? '·' : ''; });
 document.getElementById('fieldWrap').addEventListener('pointermove', function(e){ if (e.pointerType !== 'mouse' || e.buttons) return; var r = e.currentTarget.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (1 - (e.clientY - r.top) / r.height))))); });
 document.getElementById('fieldWrap').addEventListener('pointerleave', function(){ field.set(val); });
 
@@ -461,6 +466,7 @@ document.getElementById('save').addEventListener('click', function(){
  if (val === null) return;
  var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], e:val };
  var tg = tagsPicked(); if (tg.length) e.tags = tg;
+ var nt = document.getElementById('jot').value.trim(); if (nt) e.note = nt;
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
@@ -482,7 +488,7 @@ function resetForm(){
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
  openKinds = {};
  document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
- document.getElementById('cyc').open = false; document.getElementById('tagFold').open = false;
+ document.getElementById('cyc').open = false; document.getElementById('tagFold').open = false; document.getElementById('noteFold').open = false; document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = '';
 }
 
 // ── the sky: 28 days across, 24 hours down ───────────────────────────
@@ -496,9 +502,7 @@ function paintSky(){
  x.font = '11px ' + mono; x.textBaseline = 'middle'; x.textAlign = 'right'; x.fillStyle = css('--mute');
  [0, 6, 12, 18, 24].forEach(function(h){ x.fillText(pad(h % 24), L - 8, Y(h)); });
  x.strokeStyle = 'rgba(189,166,255,.14)'; x.lineWidth = 1;
- [0, 24].concat(SLOT_H).forEach(function(h){ x.beginPath(); x.moveTo(L, Math.round(Y(h)) + .5); x.lineTo(W - 4, Math.round(Y(h)) + .5); x.stroke(); });
- x.font = '10px ' + mono; x.textAlign = 'left'; x.fillStyle = 'rgba(189,166,255,.45)';
- [[6,'morning'],[13.5,'midday'],[17.5,'afternoon'],[22,'evening']].forEach(function(s){ x.fillText(s[1], L + 4, Y(s[0]) - 7); });
+ [0, 12, 24].forEach(function(h){ x.beginPath(); x.moveTo(L, Math.round(Y(h)) + .5); x.lineTo(W - 4, Math.round(Y(h)) + .5); x.stroke(); });
  // day letters; mondays and today stand out
  x.font = '12px ' + mono; x.textAlign = 'center';
  days.forEach(function(ds, i){ var d = new Date(ds + 'T12:00:00'), dow = (d.getDay() + 6) % 7; x.fillStyle = ds === tod ? css('--ink') : dow === 0 ? css('--orchid') : 'rgba(189,166,255,.6)'; x.fillText('MTWTFSS'[dow], X(i), B + 12); });
@@ -534,6 +538,7 @@ function showNote(e){
  if (e.body) p.push('<b>body wanted</b> ' + esc(e.body.join(', ')));
  if (e.cyc){ var cp = []; if (e.cyc.flow) cp.push(CYC.flow[e.cyc.flow]); if (e.cyc.cramp) cp.push(CYC.cramp[e.cyc.cramp] + ' cramps'); if (e.cyc.sx) cp = cp.concat(e.cyc.sx); if (cp.length) p.push('<b>cycle</b> ' + esc(cp.join(', '))); }
  if (e.tags) p.push('<b>tags</b> ' + esc(e.tags.join(' ')));
+ if (e.note) p.push('<i>' + esc(e.note) + '</i>');
  document.getElementById('note').innerHTML = p.join('<br>');
 }
 // Only plain counts and means over the last 28 days. Nothing here claims a cause.
