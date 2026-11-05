@@ -46,6 +46,7 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .num.none{ color:var(--line); }
 .word{ text-align:center; font:italic 300 28px/1.3 var(--serif); color:var(--a, var(--mute)); min-height:38px; margin:-6px 0 8px; opacity:0; transform:translateY(4px); transition:opacity .5s ease, transform .5s ease, color .4s; }
 .word.show{ opacity:1; transform:none; }
+.whisper{ text-align:center; color:var(--mute); font-size:13px; letter-spacing:.04em; min-height:18px; margin:-4px 0 10px; opacity:0; transition:opacity 1.2s ease .3s; } .whisper.show{ opacity:.8; }
 
 .dots{ position:relative; height:44px; margin:4px 0 0; touch-action:none; cursor:pointer; }
 .dots .rail{ position:absolute; left:0; right:0; top:21px; height:2px; background:var(--line); }
@@ -133,6 +134,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="mid"><div class="num none" id="num">–</div></div>
 </div>
 <div class="word" id="word"></div>
+<div class="whisper" id="whisper"></div>
 <div class="dots" id="dots" role="slider" aria-valuemin="0" aria-valuemax="10" aria-label="Energy, 0 empty to 10 full"></div>
 <div class="ends"><span>empty</span><span>full</span></div>
 
@@ -219,26 +221,49 @@ function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 12 ? 0
 // Six flat steps, each a meaning: night-violet at rest, ice in the middle, mint is good, gold then amber is lit.
 var STOPS = ['#6b55b3','#8b6fd6','#86cbfe','#21f6bc','#ffd36b','#f5a623'];
 var INKS  = ['#f0eaff','#0a0118','#0a0118','#0a0118','#0a0118','#0a0118'];
+var WHISPER = { lo:['nothing to fix right now.', 'low is allowed.', 'only the smallest next thing.', 'the sky is breathing. you can too.'], mid:['steady is a fine place to be.', 'enough is enough.', 'nothing needs chasing.'], hi:['spend it on something you love.', 'make a thing.', 'go outside with it.', 'this is the good stuff.'] };
 var WORDS = ['running on empty','running on empty','low','low','getting by','getting by','steady','good','good','lit up','lit up'];
 function step(v){ return Math.min(5, Math.floor(v / 2)); }
 function shade(v){ return STOPS[step(v)]; }
 
 // ── stars: a seeded field of crisp points, a few of them coloured ───
-(function stars(){
- var c = document.getElementById('stars'), x = c.getContext('2d');
- function draw(){
-  var w = innerWidth, h = innerHeight, r = dpr(); c.width = w * r; c.height = h * r; x.setTransform(r, 0, 0, r, 0, 0); x.clearRect(0, 0, w, h);
+// The background answers the number. Low: the stars sink slowly and the whole sky
+// breathes at four in, seven out, a pace to fall into without being told to.
+// High: they quicken and the odd one streaks. Nothing picked: still.
+var stars = (function(){
+ var c = document.getElementById('stars'), x = c.getContext('2d'), S = [], W = 0, H = 0, lvl = -1, raf = 0, last = 0, streak = null;
+ function build(){
+  W = innerWidth; H = innerHeight; var r = dpr(); c.width = W * r; c.height = H * r; x.setTransform(r, 0, 0, r, 0, 0);
   var s = 7; function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
-  var n = Math.round(w * h / 1800);
-  for (var i = 0; i < n; i++){
-   var px = Math.round(rnd() * w), py = Math.round(rnd() * h), k = rnd();
-   var col = k > .992 ? '#21f6bc' : k > .984 ? '#f5a623' : k > .97 ? '#86cbfe' : '#bda6ff';
-   x.globalAlpha = k > .97 ? .9 : .12 + rnd() * .3; x.fillStyle = col;
-   x.fillRect(px, py, k > .95 ? 2 : 1, k > .95 ? 2 : 1);
+  S = []; var n = Math.round(W * H / 1800);
+  for (var i = 0; i < n; i++){ var k = rnd(); S.push({ x:rnd() * W, y:rnd() * H, k:k, a:k > .97 ? .9 : .12 + rnd() * .3, col:k > .992 ? '#21f6bc' : k > .984 ? '#f5a623' : k > .97 ? '#86cbfe' : '#bda6ff', ph:rnd() * 6.28 }); }
+ }
+ function draw(now){
+  x.clearRect(0, 0, W, H);
+  var t = lvl < 0 ? -1 : lvl / 10, lo = t >= 0 && t <= .35, hi = t >= .75;
+  var breathe = 1; if (lo){ var ph = (now / 1000) % 11; breathe = ph < 4 ? .7 + .3 * (1 - Math.cos(ph / 4 * Math.PI)) / 2 : 1 - .3 * (1 - Math.cos((ph - 4) / 7 * Math.PI)) / 2; }
+  for (var i = 0; i < S.length; i++){
+   var p = S[i], a = p.a;
+   if (lo) a *= breathe; else if (hi) a *= .75 + .45 * Math.sin(now / 350 + p.ph);
+   x.globalAlpha = Math.min(1, a); x.fillStyle = p.col;
+   var sz = p.k > .95 ? 2 : 1; x.fillRect(Math.round(p.x), Math.round(p.y), sz, sz);
   }
+  if (streak){ var u = (now - streak.t0) / 700; if (u >= 1) streak = null; else { x.globalAlpha = .8 * (1 - u); x.fillStyle = '#ffd36b'; for (var q = 0; q < 12; q++){ var uu = Math.max(0, u - q * .015); x.fillRect(streak.x + streak.dx * uu, streak.y + streak.dy * uu, 1.5, 1.5); } } }
   x.globalAlpha = 1;
  }
- draw(); addEventListener('resize', draw);
+ function frame(now){
+  raf = 0; if (document.hidden || lvl < 0) return;
+  var dt = Math.min(.1, (now - last) / 1000 || 0); last = now;
+  var t = lvl / 10;
+  if (t <= .35) for (var i = 0; i < S.length; i++){ S[i].y += dt * 2.5 * (.3 + S[i].k); if (S[i].y > H) S[i].y -= H; }
+  if (t >= .75 && !streak && Math.random() < dt * .25){ var sx = Math.random() * W, sy = Math.random() * H * .5; streak = { x:sx, y:sy, dx:-120 - Math.random() * 80, dy:60 + Math.random() * 40, t0:now }; }
+  draw(now); raf = requestAnimationFrame(frame);
+ }
+ function go(){ if (!raf && lvl >= 0 && !document.hidden){ last = 0; raf = requestAnimationFrame(frame); } }
+ build(); draw(0);
+ addEventListener('resize', function(){ build(); draw(performance.now()); });
+ document.addEventListener('visibilitychange', go);
+ return { set:function(v){ lvl = v === null ? -1 : v; if (lvl < 0) draw(performance.now()); else go(); } };
 })();
 
 // ── header ───────────────────────────────────────────────────────────
@@ -416,6 +441,8 @@ function setVal(v, quiet){
  tint(v);
  var num = document.getElementById('num'); num.textContent = v; num.classList.remove('none');
  var wd = document.getElementById('word'); wd.textContent = WORDS[v]; wd.classList.add('show');
+ var band = v <= 3 ? 'lo' : v >= 8 ? 'hi' : 'mid', wh = document.getElementById('whisper'); if (band !== wh.dataset.band){ wh.dataset.band = band; wh.textContent = WHISPER[band][Math.floor(Math.random() * WHISPER[band].length)]; wh.classList.add('show'); }
+ stars.set(v);
  dots.setAttribute('aria-valuenow', v);
  var sv = document.getElementById('save'); sv.disabled = false; sv.textContent = 'save';
  paintDial();
@@ -462,7 +489,7 @@ var START = {
  body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
 function learned(kind){
- var cnt = {}, last = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24){ cnt[w] = (cnt[w] || 0) + 1; last[w] = e.t; } }); });
+ var cnt = {}, last = {}; readLog().forEach(function(e){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24){ cnt[w] = (cnt[w] || 0) + 1; last[w] = e.t; } }); });
  var week = localISO(new Date(Date.now() - 7 * 864e5));
  return Object.keys(cnt).filter(function(w){ return START[kind].indexOf(w) < 0 && (cnt[w] >= 2 || last[w] >= week); }).sort(function(a,b){ return cnt[b] - cnt[a] || (last[b] > last[a] ? 1 : -1); }).slice(0, 4);
 }
@@ -518,7 +545,7 @@ document.getElementById('save').addEventListener('click', function(){
 function resetForm(){
  val = null; tint(null); dots.classList.remove('set'); document.getElementById('dFill').style.width = 0; document.getElementById('dThumb').style.left = '50%';
  var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
- document.getElementById('word').classList.remove('show');
+ document.getElementById('word').classList.remove('show'); var wh0 = document.getElementById('whisper'); wh0.classList.remove('show'); wh0.dataset.band = ''; stars.set(null);
  own = { drain:[], add:[], body:[] };
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
  openKinds = {}; ownOpen = {};
