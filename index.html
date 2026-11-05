@@ -24,7 +24,8 @@
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html{ background:var(--bg); } html,body{ margin:0; color:var(--ink); }
 body{ font:400 16px/1.55 var(--mono); padding:max(16px,env(safe-area-inset-top)) 18px calc(48px + env(safe-area-inset-bottom)); max-width:520px; margin:0 auto; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
-#stars{ position:fixed; inset:0; z-index:-1; }
+#stars{ position:fixed; inset:0; z-index:-2; }
+#fieldBg{ position:fixed; left:0; right:0; top:18vh; width:100%; height:270px; z-index:-1; opacity:0; pointer-events:none; transition:opacity .8s ease; } html.away #fieldBg{ opacity:.38; }
 canvas{ display:block; }
 .top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
 .when{ color:var(--mute); font-size:14px; letter-spacing:.04em; }
@@ -127,6 +128,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 </head>
 <body>
 <canvas id="stars" aria-hidden="true"></canvas>
+<canvas id="fieldBg" aria-hidden="true"></canvas>
 
 <div class="top">
  <div><div class="when" id="when">—</div><h1 id="slot">energy</h1><canvas class="today" id="todayStrip" width="1" height="1" aria-label="check-ins today"></canvas></div>
@@ -313,7 +315,8 @@ var strip = (function(){
 // ── the field: a manifold of points that breathes with the number ────
 // Empty is a thin, slow, dim ring. Full is a warped, fast, warm cloud.
 var field = (function(){
- var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap'), thumb = null;
+ var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap'), thumb = null, away = false, bg = document.getElementById('fieldBg'), bx = bg.getContext('2d');
+ function sizeBg(){ var r = dpr(); if (bg.width !== W * r){ bg.width = W * r; bg.height = H * r; } }
  var N = 2600, P = [], cur = { t:-1, m:0, i:1 }, tgt = { t:-1 }, last = 0, run = false, raf = 0, W = 0, H = 0, rot = 0, hidden = false, burst = 0, fx = 0, fxKind = '';
  var s = 11; function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
  for (var i = 0; i < N; i++) P.push({ u:rnd() * Math.PI * 2, v:rnd() * Math.PI * 2, k:rnd(), j:rnd() * Math.PI * 2, halo:i < 180 });
@@ -369,6 +372,7 @@ var field = (function(){
    var sz = d > .7 ? 2.5 : 1.5;
    x.fillRect(cx + x1 * sc, cy + y2 * sc * .92, sz, sz);
   }
+  if (away){ sizeBg(); bx.clearRect(0, 0, bg.width, bg.height); bx.drawImage(c, 0, 0); }
   raf = requestAnimationFrame(frame);
  }
  function start(){ if (!run && !hidden){ run = true; last = 0; raf = requestAnimationFrame(frame); } }
@@ -376,7 +380,7 @@ var field = (function(){
  size(); start();
  addEventListener('resize', size);
  document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
- if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ en[0].isIntersecting ? start() : stop(); }).observe(wrap);
+ if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ away = !en[0].isIntersecting; document.documentElement.classList.toggle('away', away); if (away) sizeBg(); start(); }).observe(wrap);
  // a tap sets the number; the dots below take drags, so the page still scrolls
  var down = null;
  var sliding = false;
@@ -528,7 +532,7 @@ function spark(fromEl, kind){
  var r = fromEl.getBoundingClientRect(), f = document.getElementById('fieldWrap').getBoundingClientRect();
  var col = kind === 'drain' ? '#8b6fd6' : kind === 'add' ? '#21f6bc' : '#ffd36b';
  var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, x1 = f.left + f.width / 2, y1 = f.top + f.height / 2;
- if (y1 < -40) y1 = -20; // field is scrolled away: the spark just leaves upward
+ if (document.documentElement.classList.contains('away')){ var g = document.getElementById('fieldBg').getBoundingClientRect(); x1 = g.left + g.width / 2; y1 = g.top + g.height / 2; }
  for (var i = 0; i < 3; i++){
   var el = document.createElement('div'); el.className = 'spark'; el.style.setProperty('--sc', col); el.innerHTML = STAR_SVG; document.body.appendChild(el);
   var dx = (Math.random() - .5) * 60, bend = (Math.random() - .5) * 120;
