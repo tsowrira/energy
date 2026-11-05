@@ -29,9 +29,7 @@ canvas{ display:block; }
 .top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
 .when{ color:var(--mute); font-size:14px; letter-spacing:.04em; }
 h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em; }
-.today{ display:flex; gap:7px; margin-top:12px; }
-.today i{ width:9px; height:9px; border-radius:50%; border:1px solid var(--line2); display:block; }
-.today i.now{ border-color:var(--orchid); }
+.today{ display:block; height:22px; margin-top:8px; width:220px; }
 .sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; }
 .sync::after{ content:''; position:absolute; left:13px; top:13px; width:6px; height:6px; border-radius:50%; border:1px solid var(--mute); opacity:.4; }
 .sync.on::after{ border-color:var(--mint); background:var(--mint); opacity:.9; } .sync.wait::after{ border-color:var(--gold); background:var(--gold); opacity:1; animation:syncpulse 1.2s ease-in-out infinite; } .sync.err::after{ border-color:var(--rose); background:var(--rose); opacity:1; }
@@ -66,6 +64,8 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .cyc summary::before{ content:'›'; display:inline-block; transition:transform .2s; } .cyc[open] summary::before{ transform:rotate(90deg); }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
+.sec .q::after{ content:''; display:block; width:28px; height:2px; margin-top:10px; background:var(--line2); }
+.drain .q::after{ background:var(--rose); } .add .q::after{ background:var(--mint); } .body .q::after{ background:var(--gold); }
 .drain .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
 .add .chip.on{ background:var(--mint); border-color:var(--mint); color:var(--bg); }
 .body .chip.on{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
@@ -123,7 +123,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <canvas id="stars" aria-hidden="true"></canvas>
 
 <div class="top">
- <div><div class="when" id="when">—</div><h1 id="slot">energy</h1><div class="today" id="todayStrip"></div></div>
+ <div><div class="when" id="when">—</div><h1 id="slot">energy</h1><canvas class="today" id="todayStrip" width="1" height="1" aria-label="check-ins today"></canvas></div>
  <div class="sync" id="syncDot"></div>
 </div>
 
@@ -137,12 +137,12 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 <div class="ends"><span>empty</span><span>full</span></div>
 
 <div class="sec drain">
- <p class="q">what drained it in the last few hours?</p>
+ <p class="q">what wore it down?</p>
  <div class="chips" id="drainChips"></div>
 </div>
 
 <div class="sec add">
- <p class="q">what added to it?</p>
+ <p class="q">what lifted it?</p>
  <div class="chips" id="addChips"></div>
 </div>
 
@@ -182,7 +182,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <summary>sync <em id="ghState">not connected</em></summary>
  <p>There is no server. Entries live in this browser and in a private repo you own. Make a <strong>fine-grained</strong> token with <strong>Contents: read and write</strong> on that one repo and nothing else.</p>
  <form id="ghForm" autocomplete="on">
- <label>repo<input id="ghRepo" type="text" name="username" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" value="tsowrira/energyLog"></label>
+ <label>repo<input id="ghRepo" type="text" name="username" autocomplete="username" readonly value="tsowrira/energyLog"></label>
  <label>token<input id="ghTok" type="password" name="password" autocomplete="current-password" placeholder="github_pat_…"></label>
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
@@ -246,12 +246,33 @@ function paintHead(){
  var d = new Date(), s = slotFor(d);
  document.getElementById('slot').textContent = d.toLocaleDateString(undefined, { weekday:'long' }).toLowerCase() + ' ' + SLOTS[s];
  document.getElementById('when').textContent = d.toLocaleDateString(undefined, { month:'long', day:'numeric' }).toLowerCase();
- document.querySelector('.sec.drain .q').textContent = SLOT_Q[s] + ', what drained it?';
+ document.querySelector('.sec.drain .q').textContent = SLOT_Q[s] + ', what wore it down?';
  // one dot per check-in so far today, in its colour; none until the first
  var tod = readLog().filter(function(e){ return dayOf(e.t) === todayStr(); });
- document.getElementById('todayStrip').innerHTML = tod.map(function(e){ return '<i style="background:' + shade(e.e) + ';border-color:' + shade(e.e) + '" title="' + e.t.slice(11,16) + '"></i>'; }).join('');
- document.getElementById('todayStrip').setAttribute('aria-label', tod.length + ' check-ins today');
+ strip.set(tod);
 }
+var strip = (function(){
+ var c = document.getElementById('todayStrip'), x = c.getContext('2d'), list = [], raf = 0, W = 220, H = 22;
+ function size(){ var r = dpr(); c.width = W * r; c.height = H * r; x.setTransform(r, 0, 0, r, 0, 0); }
+ function hex(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+ function frame(now){
+  raf = 0; if (document.hidden) return;
+  x.clearRect(0, 0, W, H);
+  list.forEach(function(s, i){
+   var cx = 8 + i * 24, cy = H / 2, tw = .7 + .3 * Math.sin(now / 700 + s.ph), col = s.col;
+   // the core: a four-point star, bigger with more energy
+   var r = 2 + s.e * .35;
+   x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + tw.toFixed(2) + ')';
+   x.fillRect(cx - 1, cy - r, 2, r * 2); x.fillRect(cx - r, cy - 1, r * 2, 2);
+   // satellites: one spark per thing that was logged with it, slowly orbiting
+   for (var k = 0; k < s.n; k++){ var a = now / 2400 * (1 + k * .13) + s.ph + k * 2.1, rr = 6 + (k % 3) * 1.8; x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + (.35 + .4 * tw).toFixed(2) + ')'; x.fillRect(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .5, 1.5, 1.5); }
+  });
+  if (list.length) raf = requestAnimationFrame(frame);
+ }
+ function go(){ if (!raf && list.length) raf = requestAnimationFrame(frame); }
+ size(); document.addEventListener('visibilitychange', go);
+ return { set:function(tod){ list = tod.map(function(e, i){ return { e:e.e, col:hex(shade(e.e)), ph:i * 1.7, n:Math.min(6, (e.drainChips || []).length + (e.addChips || []).length + (e.body || []).length) }; }); if (!list.length) x.clearRect(0, 0, W, H); go(); } };
+})();
 
 // ── the field: a manifold of points that breathes with the number ────
 // Empty is a thin, slow, dim ring. Full is a warped, fast, warm cloud.
@@ -276,6 +297,7 @@ var field = (function(){
   var speed = .06 + .55 * t * t, warp = .04 + .55 * t, tube = .10 + .30 * t, Rm = .62 + .14 * t;
   // past the midpoint the ring folds into a trefoil, fully knotted at the top
   var kk = Math.max(0, Math.min(1, (t - .45) / .55)), knot = kk * kk * (3 - 2 * kk);
+  var idle = Math.max(0, Math.min(1, -cur.t / .15));
   rot += dt * (.05 + .25 * t);
   var br = Math.sin(now / 1000 * (.6 + t)), sc = Math.min(W, H) * .46 * (1 + .025 * br);
   if (none && thumb) thumb.style.transform = 'scale(' + (1 + .18 * br).toFixed(3) + ')'; else if (thumb && thumb.style.transform) thumb.style.transform = '';
@@ -288,10 +310,12 @@ var field = (function(){
    p.u += dt * speed * (.6 + p.k * .8); p.v += dt * .12 * (.5 + p.k); p.j += dt * .4;
    var X, Y, Z;
    if (p.halo){ var hr = 1.15 + p.k * .55; X = Math.cos(p.u * .3) * hr; Y = Math.sin(p.u * .3) * hr; Z = Math.sin(p.j) * .35; }
+   else if (idle >= 1){ var ir = .35 + .75 * Math.pow(p.k, .6) + .06 * Math.sin(p.j), ph = p.v + p.u * .08, sv = Math.sin(ph); X = ir * sv * Math.cos(p.u * .22 + p.j * .05); Y = ir * Math.cos(ph) * .8; Z = ir * sv * Math.sin(p.u * .22 + p.j * .05); }
    else {
     var r = tube * (.4 + p.k * .6), ring = Rm + r * Math.cos(p.v);
     X = ring * Math.cos(p.u); Y = ring * Math.sin(p.u);
     Z = r * Math.sin(p.v) + warp * Math.sin(3 * p.u + p.j * .2) * (.5 + .5 * Math.cos(p.v)) + warp * .35 * Math.sin(5 * p.u);
+    if (idle > 0){ var ir2 = .35 + .75 * Math.pow(p.k, .6) + .06 * Math.sin(p.j), ph2 = p.v + p.u * .08, sv2 = Math.sin(ph2), ix = ir2 * sv2 * Math.cos(p.u * .22 + p.j * .05), iy = ir2 * Math.cos(ph2) * .8, iz = ir2 * sv2 * Math.sin(p.u * .22 + p.j * .05); X += (ix - X) * idle; Y += (iy - Y) * idle; Z += (iz - Z) * idle; }
     if (knot > 0){ var kx = (Math.sin(p.u) + 2 * Math.sin(2 * p.u)) * .3, ky = (Math.cos(p.u) - 2 * Math.cos(2 * p.u)) * .3, kz = -Math.sin(3 * p.u) * .3, kl = Math.sqrt(kx * kx + ky * ky) || 1; var rr = r * .8; kx += rr * Math.cos(p.v) * kx / kl; ky += rr * Math.cos(p.v) * ky / kl; kz += rr * Math.sin(p.v); X += (kx - X) * knot; Y += (ky - Y) * knot; Z += (kz - Z) * knot; }
    }
    if (burst > 0){ var pk = push * (.7 + p.k * .6); X *= pk; Y *= pk; Z *= pk; }
@@ -404,7 +428,7 @@ document.getElementById('fieldWrap').addEventListener('pointerleave', function()
 
 
 // ── cycle: one quiet line, closed unless opened. Day-level, kept with the first entry that logs it.
-var CYC = { flow:['none','spotting','light','medium','heavy'], cramp:['none','mild','strong'], sx:['headache','bloated','sore','cravings','low mood','back ache','acne','libido up','libido down'] };
+var CYC = { flow:['none','spotting','light','medium','heavy'], cramp:['none','mild','strong'], sx:['headache','bloated','sore','cravings','low mood','achey','acne','libido up','libido down'] };
 function cycToday(){ var t = todayStr(), r = null; readLog().forEach(function(e){ if (dayOf(e.t) === t && e.cyc) r = e.cyc; }); return r; }
 function cycDay(){ var last = null; readLog().forEach(function(e){ if (e.cyc && e.cyc.flow >= 2) last = dayOf(e.t); }); if (!last) return null; var d = Math.round((new Date(todayStr() + 'T12:00:00') - new Date(last + 'T12:00:00')) / 864e5) + 1; return d > 90 ? null : d; }
 function paintCyc(){
@@ -655,7 +679,7 @@ window.addEventListener('online', flush);
 
 document.getElementById('ghForm').addEventListener('submit', function(ev){
  ev.preventDefault();
- var repo = document.getElementById('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
+ var repo = 'tsowrira/energyLog';
  var tok = document.getElementById('ghTok').value.trim(), old = readGH();
  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)){ toast('Repo looks like owner/name'); return; }
  if (!tok && old) tok = old.tok;
