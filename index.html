@@ -30,10 +30,13 @@ canvas{ display:block; }
 .when{ color:var(--mute); font-size:14px; letter-spacing:.04em; }
 h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em; }
 .today{ display:block; height:22px; margin-top:8px; width:220px; }
-.sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; }
-.sync::after{ content:''; position:absolute; left:13px; top:13px; width:6px; height:6px; border-radius:50%; border:1px solid var(--mute); opacity:.4; }
-.sync.on::after{ border-color:var(--mint); background:var(--mint); opacity:.9; } .sync.wait::after{ border-color:var(--gold); background:var(--gold); opacity:1; animation:syncpulse 1.2s ease-in-out infinite; } .sync.err::after{ border-color:var(--rose); background:var(--rose); opacity:1; }
-@keyframes syncpulse{ 50%{ transform:scale(.5); opacity:.4 } }
+.sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; --sc:var(--mute); opacity:.5; }
+.sync::before,.sync::after{ content:''; position:absolute; left:50%; top:50%; background:var(--sc); transform:translate(-50%,-50%); animation:twinkle 3.2s ease-in-out infinite; }
+.sync::before{ width:2px; height:12px; } .sync::after{ width:12px; height:2px; }
+.sync.on{ --sc:var(--mint); opacity:1; } .sync.wait{ --sc:var(--gold); opacity:1; } .sync.wait::before,.sync.wait::after{ animation-duration:.9s; } .sync.err{ --sc:var(--rose); opacity:1; }
+.sync i{ position:absolute; left:50%; top:50%; width:2px; height:2px; background:var(--sc); margin:-1px; animation:orbit 5s linear infinite; opacity:.8; } .sync i+i{ animation-delay:-2.5s; animation-duration:7s; }
+@keyframes twinkle{ 50%{ transform:translate(-50%,-50%) scale(.55); opacity:.55 } }
+@keyframes orbit{ from{ transform:rotate(0) translateX(11px) } to{ transform:rotate(360deg) translateX(11px) } }
 
 .k{ color:var(--mute); font-size:13px; letter-spacing:.08em; margin:0 0 6px; }
 .q{ font:italic 400 24px/1.25 var(--serif); margin:0 0 14px; color:var(--ink); }
@@ -68,6 +71,7 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .sec .q::after{ content:''; display:block; width:28px; height:2px; margin-top:10px; background:var(--line2); }
 .drain .q::after{ background:var(--violet); } .add .q::after{ background:var(--mint); } .body .q::after{ background:var(--gold); }
 .chip{ transition:background .25s, border-color .25s, color .25s, transform .18s; } .chip:active{ transform:scale(.96); }
+.spark{ position:fixed; left:0; top:0; width:10px; height:10px; pointer-events:none; z-index:20; } .spark::before,.spark::after{ content:''; position:absolute; left:50%; top:50%; background:var(--sc); transform:translate(-50%,-50%); } .spark::before{ width:2px; height:10px; } .spark::after{ width:10px; height:2px; }
 .drain .chip.on{ background:rgba(139,111,214,.22); border-color:var(--violet); color:var(--ink); }
 .add .chip.on{ background:rgba(33,246,188,.14); border-color:var(--mint); color:var(--ink); }
 .body .chip.on{ background:rgba(255,211,107,.14); border-color:var(--gold); color:var(--ink); }
@@ -126,7 +130,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 
 <div class="top">
  <div><div class="when" id="when">—</div><h1 id="slot">energy</h1><canvas class="today" id="todayStrip" width="1" height="1" aria-label="check-ins today"></canvas></div>
- <div class="sync" id="syncDot"></div>
+ <div class="sync" id="syncDot"><i></i><i></i></div>
 </div>
 
 <p class="q">how much energy is in you right now?</p>
@@ -347,12 +351,12 @@ var field = (function(){
     if (knot > 0){ var kx = (Math.sin(p.u) + 2 * Math.sin(2 * p.u)) * .3, ky = (Math.cos(p.u) - 2 * Math.cos(2 * p.u)) * .3, kz = -Math.sin(3 * p.u) * .3, kl = Math.sqrt(kx * kx + ky * ky) || 1; var rr = r * .8; kx += rr * Math.cos(p.v) * kx / kl; ky += rr * Math.cos(p.v) * ky / kl; kz += rr * Math.sin(p.v); X += (kx - X) * knot; Y += (ky - Y) * knot; Z += (kz - Z) * knot; }
    }
    if (burst > 0){ var pk = push * (.7 + p.k * .6); X *= pk; Y *= pk; Z *= pk; }
-   if (fx > 0){ Y += (fxDown - fxUp) * .45 * p.k * p.k; if (fxRip){ var rp = 1 + fxRip * .18 * Math.sin(p.u * 2 + fx * 9); X *= rp; Y *= rp; } }
+   if (fx > 0){ Y += (fxDown - fxUp) * .9 * p.k * p.k; if (fxRip){ var rp = 1 + fxRip * .3 * Math.sin(p.u * 2 + fx * 9); X *= rp; Y *= rp; } }
    var x1 = X * cr - Z * sr, z1 = X * sr + Z * cr;
    var y2 = Y * ct - z1 * st, z2 = Y * st + z1 * ct;
    var d = (z2 + 1.2) / 2.4;
    var col = p.k > .96 ? INK : p.k > .78 ? up : p.k < .14 ? lo : base;
-   var al = (p.halo ? .1 : .22) + d * (none ? .4 : .72) * (p.halo ? .5 : 1) + glow + fxUp * .35 - fxDown * .25;
+   var al = (p.halo ? .1 : .22) + d * (none ? .4 : .72) * (p.halo ? .5 : 1) + glow + fxUp * .5 - fxDown * .3;
    if (p.k > .96) al = Math.min(1, al + .3 + .3 * Math.sin(p.j * 3));
    x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + al.toFixed(2) + ')';
    var sz = d > .7 ? 2.5 : 1.5;
@@ -510,8 +514,20 @@ function paintChips(){
   Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
    if (c.dataset.own){ if (c.querySelector('input')) return; ownOpen[kind] = 1; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; wireOwn(kind, box, list); return; }
-   c.classList.toggle('on'); if (c.classList.contains('on')) field.fx(kind); if (navigator.vibrate) navigator.vibrate(3); }); });
+   c.classList.toggle('on'); if (c.classList.contains('on')){ field.fx(kind); spark(c, kind); } if (navigator.vibrate) navigator.vibrate(3); }); });
  });
+}
+function spark(fromEl, kind){
+ if (!fromEl.animate) return;
+ var r = fromEl.getBoundingClientRect(), f = document.getElementById('fieldWrap').getBoundingClientRect();
+ var col = kind === 'drain' ? '#8b6fd6' : kind === 'add' ? '#21f6bc' : '#ffd36b';
+ var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, x1 = f.left + f.width / 2, y1 = f.top + f.height / 2;
+ if (y1 < -40) y1 = -20; // field is scrolled away: the spark just leaves upward
+ for (var i = 0; i < 3; i++){
+  var el = document.createElement('div'); el.className = 'spark'; el.style.setProperty('--sc', col); document.body.appendChild(el);
+  var dx = (Math.random() - .5) * 60, bend = (Math.random() - .5) * 120;
+  el.animate([{ transform:'translate(' + x0 + 'px,' + y0 + 'px) scale(.6)', opacity:0 }, { transform:'translate(' + (x0 + bend) + 'px,' + ((y0 + y1) / 2) + 'px) scale(1.3)', opacity:1, offset:.45 }, { transform:'translate(' + (x1 + dx) + 'px,' + y1 + 'px) scale(.3)', opacity:0 }], { duration:850 + i * 120, easing:'cubic-bezier(.3,.6,.4,1)', delay:i * 60 }).onfinish = (function(e){ return function(){ e.remove(); }; })(el);
+ }
 }
 function wireOwn(kind, box, list){
  var inp = box.querySelector('.chip[data-own] input'); if (!inp) return; inp.focus();
