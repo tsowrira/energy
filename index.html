@@ -32,8 +32,10 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .today{ display:flex; gap:7px; margin-top:12px; }
 .today i{ width:9px; height:9px; border-radius:50%; border:1px solid var(--line2); display:block; }
 .today i.now{ border-color:var(--orchid); }
-.sync{ width:12px; height:12px; border-radius:50%; margin:8px -14px 0 0; background:var(--mute); opacity:.35; box-sizing:content-box; border:16px solid transparent; background-clip:padding-box; cursor:pointer; }
-.sync.on{ background:var(--mint); opacity:1; } .sync.wait{ background:var(--gold); opacity:1; } .sync.err{ background:var(--rose); opacity:1; }
+.sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; }
+.sync::after{ content:''; position:absolute; left:13px; top:13px; width:6px; height:6px; border-radius:50%; border:1px solid var(--mute); opacity:.4; }
+.sync.on::after{ border-color:var(--mint); background:var(--mint); opacity:.9; } .sync.wait::after{ border-color:var(--gold); background:var(--gold); opacity:1; animation:syncpulse 1.2s ease-in-out infinite; } .sync.err::after{ border-color:var(--rose); background:var(--rose); opacity:1; }
+@keyframes syncpulse{ 50%{ transform:scale(.5); opacity:.4 } }
 
 .k{ color:var(--mute); font-size:13px; letter-spacing:.08em; margin:0 0 6px; }
 .q{ font:italic 400 24px/1.25 var(--serif); margin:0 0 14px; color:var(--ink); }
@@ -52,8 +54,7 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .dots .fill{ position:absolute; left:0; top:21px; height:2px; width:0; background:var(--a); transition:width .12s; }
 .dots .thumb{ position:absolute; top:8px; left:0; width:28px; height:28px; margin-left:-14px; border-radius:50%; border:1.5px solid var(--orchid); background:var(--bg); transition:left .12s, transform .15s; box-sizing:border-box; }
 .dots.set .thumb{ background:var(--a); border-color:var(--a); }
-.dots:not(.set) .thumb{ animation:nudge 2.4s ease-in-out infinite; }
-@keyframes nudge{ 0%,100%{ margin-left:-14px } 50%{ margin-left:-4px } }
+
 .dots .tick{ position:absolute; top:20px; width:1px; height:4px; background:var(--line); }
 .ends{ display:flex; justify-content:space-between; color:var(--mute); font-size:13px; letter-spacing:.06em; margin:2px 0 0; }
 
@@ -255,7 +256,7 @@ function paintHead(){
 // ── the field: a manifold of points that breathes with the number ────
 // Empty is a thin, slow, dim ring. Full is a warped, fast, warm cloud.
 var field = (function(){
- var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap');
+ var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap'), thumb = null;
  var N = 2600, P = [], cur = { t:-1, m:0 }, tgt = { t:-1 }, last = 0, run = false, raf = 0, W = 0, H = 0, rot = 0, hidden = false, burst = 0;
  var s = 11; function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
  for (var i = 0; i < N; i++) P.push({ u:rnd() * Math.PI * 2, v:rnd() * Math.PI * 2, k:rnd(), j:rnd() * Math.PI * 2, halo:i < 180 });
@@ -276,7 +277,8 @@ var field = (function(){
   // past the midpoint the ring folds into a trefoil, fully knotted at the top
   var kk = Math.max(0, Math.min(1, (t - .45) / .55)), knot = kk * kk * (3 - 2 * kk);
   rot += dt * (.05 + .25 * t);
-  var sc = Math.min(W, H) * .46 * (1 + .025 * Math.sin(now / 1000 * (.6 + t)));
+  var br = Math.sin(now / 1000 * (.6 + t)), sc = Math.min(W, H) * .46 * (1 + .025 * br);
+  if (none && thumb) thumb.style.transform = 'scale(' + (1 + .18 * br).toFixed(3) + ')'; else if (thumb && thumb.style.transform) thumb.style.transform = '';
   var tilt = 1.05 - .35 * t, ct = Math.cos(tilt), st = Math.sin(tilt), cr = Math.cos(rot), sr = Math.sin(rot);
   var k0 = Math.min(5, Math.floor(t * 10 / 2 + 1e-9)), base = none ? MUTE : RAMP[k0], up = none ? MUTE : RAMP[Math.min(5, k0 + 1)], lo = none ? MUTE : RAMP[Math.max(0, k0 - 1)];
   x.clearRect(0, 0, W, H);
@@ -318,7 +320,7 @@ var field = (function(){
  wrap.addEventListener('pointermove', function(e){ if (!down || !(e.buttons || e.pressure)) return; var dx = e.clientX - down.x, dy = e.clientY - down.y; if (!sliding && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)){ sliding = true; try { wrap.setPointerCapture(e.pointerId); } catch(_){} } if (sliding) setVal((down.v === null ? 5 : down.v) + Math.round(dx / (wrap.clientWidth / 14))); });
  wrap.addEventListener('pointercancel', function(){ down = null; sliding = false; });
  wrap.addEventListener('pointerup', function(e){ if (sliding){ down = null; sliding = false; return; } if (!down || Math.abs(e.clientY - down.y) > 8 || Math.abs(e.clientX - down.x) > 8){ down = null; return; } down = null; var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); });
- return { set:function(v){ tgt.t = v === null ? -1 : v / 10; }, hide:function(h){ hidden = h; h ? stop() : start(); }, burst:function(){ burst = 1; start(); } };
+ return { set:function(v){ tgt.t = v === null ? -1 : v / 10; }, hide:function(h){ hidden = h; h ? stop() : start(); }, burst:function(){ burst = 1; start(); }, thumb:function(el){ thumb = el; } };
 })();
 function paintDial(){ field.set(val); }
 
@@ -379,6 +381,7 @@ var val = null, dots = document.getElementById('dots');
 dots.innerHTML = '<div class="rail"></div><div class="fill" id="dFill"></div><div class="thumb" id="dThumb"></div>';
 for (var i = 0; i <= 10; i += 5){ var tk = document.createElement('div'); tk.className = 'tick'; tk.style.left = (i * 10) + '%'; dots.appendChild(tk); }
 document.getElementById('dThumb').style.left = '50%';
+field.thumb(document.getElementById('dThumb'));
 function tint(v){ var r = document.documentElement.style; if (v === null){ r.removeProperty('--a'); r.removeProperty('--a-ink'); return; } r.setProperty('--a', shade(v)); r.setProperty('--a-ink', INKS[step(v)]); }
 function setVal(v, quiet){
  v = Math.max(0, Math.min(10, v)); if (v === val) return; val = v;
@@ -432,11 +435,12 @@ var START = {
  body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
 function learned(kind){
- var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24) cnt[w] = (cnt[w] || 0) + 1; }); });
- return Object.keys(cnt).filter(function(w){ return cnt[w] >= 1 && START[kind].indexOf(w) < 0; }).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 6);
+ var cnt = {}, last = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24){ cnt[w] = (cnt[w] || 0) + 1; last[w] = e.t; } }); });
+ var week = localISO(new Date(Date.now() - 7 * 864e5));
+ return Object.keys(cnt).filter(function(w){ return START[kind].indexOf(w) < 0 && (cnt[w] >= 2 || last[w] >= week); }).sort(function(a,b){ return cnt[b] - cnt[a] || (last[b] > last[a] ? 1 : -1); }).slice(0, 4);
 }
 function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
-var openKinds = {}, own = { drain:[], add:[], body:[] };
+var openKinds = {}, ownOpen = {}, own = { drain:[], add:[], body:[] };
 function paintChips(){
  ['drain','add','body'].forEach(function(kind){
   var box = document.getElementById(kind + 'Chips'), on = {};
@@ -445,19 +449,24 @@ function paintChips(){
   var show = (full ? list : list.slice(0, 6)).concat(own[kind].filter(function(w){ return list.indexOf(w) < 0; }));
   var h = show.map(function(w){ return '<span class="chip' + (on[w] || own[kind].indexOf(w) >= 0 ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
   if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
-  h.push('<span class="chip own" data-own="1">+ your own</span>');
+  h.push(ownOpen[kind] ? '<span class="chip own" data-own="1"><input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done"></span>' : '<span class="chip own" data-own="1">+ your own</span>');
   box.innerHTML = h.join('');
+  if (ownOpen[kind]) wireOwn(kind, box, list);
   Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
-   if (c.dataset.own){ if (c.querySelector('input')) return; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; var inp = c.querySelector('input'); inp.focus();
-    // a word already on the list just lights that chip; return keeps the box open for the next one
-    var done = function(again){ var ws = inp.value.split(',').map(function(w){ return w.trim().toLowerCase().slice(0, 30); }).filter(Boolean); inp.value = ''; if (!ws.length && !again){ paintChips(); return; }
-     ws.forEach(function(w){ if (list.indexOf(w) < 0 && own[kind].indexOf(w) < 0) own[kind].push(w); });
-     if (ws.some(function(w){ return list.indexOf(w) >= 6; })) openKinds[kind] = 1;
-     paintChips(); ws.forEach(function(w){ Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(c){ if (c.dataset.w === w) c.classList.add('on'); }); }); if (again){ var nb = box.querySelector('.chip[data-own]'); if (nb) nb.click(); } };
-    inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); done(true); } }); inp.addEventListener('blur', function(){ if (document.activeElement !== inp) done(false); }); return; }
+   if (c.dataset.own){ if (c.querySelector('input')) return; ownOpen[kind] = 1; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; wireOwn(kind, box, list); return; }
    c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
  });
+}
+function wireOwn(kind, box, list){
+ var inp = box.querySelector('.chip[data-own] input'); if (!inp) return; inp.focus();
+ // a word already on the list just lights that chip; return keeps the box open for the next one
+ var done = function(again){ var ws = inp.value.split(',').map(function(w){ return w.trim().toLowerCase().slice(0, 30); }).filter(Boolean); inp.value = ''; if (!ws.length && !again){ paintChips(); return; }
+     ws.forEach(function(w){ if (list.indexOf(w) < 0 && own[kind].indexOf(w) < 0) own[kind].push(w); });
+     if (ws.some(function(w){ return list.indexOf(w) >= 6; })) openKinds[kind] = 1;
+     ownOpen[kind] = again ? 1 : 0; paintChips(); ws.forEach(function(w){ Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(c){ if (c.dataset.w === w) c.classList.add('on'); }); }); };
+ inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); done(true); } });
+ inp.addEventListener('blur', function(){ setTimeout(function(){ if (inp.isConnected && document.activeElement !== inp) done(false); }, 120); });
 }
 function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySelectorAll('#' + kind + 'Chips .chip.on'), function(c){ a.push(c.dataset.w); }); return a; }
 
@@ -485,7 +494,7 @@ function resetForm(){
  document.getElementById('word').classList.remove('show');
  own = { drain:[], add:[], body:[] };
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
- openKinds = {};
+ openKinds = {}; ownOpen = {};
  document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
  document.getElementById('cyc').open = false; document.getElementById('noteFold').open = false; document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = '';
 }
