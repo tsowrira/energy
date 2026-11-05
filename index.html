@@ -429,7 +429,7 @@ function paintCycState(){
 var START = {
  drain:['juggling too many threads','too many claude sessions','annoying people','something unfair','anxiety or worry','tiredness','poor sleep','cognitive overload','overwhelm','chores','soreness','meetings','skipped a meal','late screens','loud places','feeling alone'],
  add:['hobbies','music','making a song','singing','gym','a hike','walk','getting outside','sunshine','socializing','friends','a good convo','huggies','loviness','cozy','hot tub','laughing','finishing something','doing nothing','a good sleep'],
- body:['water','food','bathroom','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
+ body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
 function learned(kind){
  var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24) cnt[w] = (cnt[w] || 0) + 1; }); });
@@ -450,8 +450,12 @@ function paintChips(){
   Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
    if (c.dataset.own){ if (c.querySelector('input')) return; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; var inp = c.querySelector('input'); inp.focus();
-    var done = function(){ inp.value.split(',').forEach(function(w){ w = w.trim().toLowerCase().slice(0, 30); if (w && own[kind].indexOf(w) < 0) own[kind].push(w); }); paintChips(); };
-    inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); done(); } }); inp.addEventListener('blur', done); return; }
+    // a word already on the list just lights that chip; return keeps the box open for the next one
+    var done = function(again){ var ws = inp.value.split(',').map(function(w){ return w.trim().toLowerCase().slice(0, 30); }).filter(Boolean); inp.value = ''; if (!ws.length && !again){ paintChips(); return; }
+     ws.forEach(function(w){ if (list.indexOf(w) < 0 && own[kind].indexOf(w) < 0) own[kind].push(w); });
+     if (ws.some(function(w){ return list.indexOf(w) >= 6; })) openKinds[kind] = 1;
+     paintChips(); ws.forEach(function(w){ Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(c){ if (c.dataset.w === w) c.classList.add('on'); }); }); if (again){ var nb = box.querySelector('.chip[data-own]'); if (nb) nb.click(); } };
+    inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); done(true); } }); inp.addEventListener('blur', function(){ if (document.activeElement !== inp) done(false); }); return; }
    c.classList.toggle('on'); if (navigator.vibrate) navigator.vibrate(3); }); });
  });
 }
