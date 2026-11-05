@@ -314,7 +314,7 @@ var strip = (function(){
 // Empty is a thin, slow, dim ring. Full is a warped, fast, warm cloud.
 var field = (function(){
  var c = document.getElementById('field'), x = c.getContext('2d'), wrap = document.getElementById('fieldWrap'), thumb = null;
- var N = 2600, P = [], cur = { t:-1, m:0 }, tgt = { t:-1 }, last = 0, run = false, raf = 0, W = 0, H = 0, rot = 0, hidden = false, burst = 0, fx = 0, fxKind = '';
+ var N = 2600, P = [], cur = { t:-1, m:0, i:1 }, tgt = { t:-1 }, last = 0, run = false, raf = 0, W = 0, H = 0, rot = 0, hidden = false, burst = 0, fx = 0, fxKind = '';
  var s = 11; function rnd(){ s = (s * 16807) % 2147483647; return s / 2147483647; }
  for (var i = 0; i < N; i++) P.push({ u:rnd() * Math.PI * 2, v:rnd() * Math.PI * 2, k:rnd(), j:rnd() * Math.PI * 2, halo:i < 180 });
  function size(){ W = wrap.clientWidth; H = wrap.clientHeight; var r = dpr(); c.width = W * r; c.height = H * r; x.setTransform(r, 0, 0, r, 0, 0); }
@@ -327,6 +327,7 @@ var field = (function(){
   if (document.hidden){ raf = requestAnimationFrame(frame); return; }
   // ease toward the target: the number changes, the field follows
   if (tgt.t < 0) cur.t += (-.15 - cur.t) * Math.min(1, dt * 2.5); else cur.t += (tgt.t - cur.t) * Math.min(1, dt * 2.5);
+  cur.i += ((tgt.t < 0 ? 1 : 0) - cur.i) * Math.min(1, dt * 1.3);
   var t = Math.max(0, cur.t), none = tgt.t < 0;
   if (burst > 0) burst = Math.max(0, burst - dt * .8);
   if (fx > 0) fx = Math.max(0, fx - dt * .9);
@@ -335,7 +336,7 @@ var field = (function(){
   var speed = .06 + .55 * t * t, warp = .04 + .55 * t, tube = .10 + .30 * t, Rm = .62 + .14 * t;
   // past the midpoint the ring folds into a trefoil, fully knotted at the top
   var kk = Math.max(0, Math.min(1, (t - .45) / .55)), knot = kk * kk * (3 - 2 * kk);
-  var idle = Math.max(0, Math.min(1, -cur.t / .15));
+  var ii = Math.max(0, Math.min(1, cur.i)), idle = ii * ii * (3 - 2 * ii);
   rot += dt * (.05 + .25 * t);
   var br = Math.sin(now / 1000 * (.6 + t)), sc = Math.min(W, H) * .46 * (1 + .025 * br);
   if (none && thumb) thumb.style.transform = 'scale(' + (1 + .18 * br).toFixed(3) + ')'; else if (thumb && thumb.style.transform) thumb.style.transform = '';
@@ -348,7 +349,7 @@ var field = (function(){
    p.u += dt * speed * (.6 + p.k * .8); p.v += dt * .12 * (.5 + p.k); p.j += dt * .4;
    var X, Y, Z;
    if (p.halo){ var hr = 1.15 + p.k * .55; X = Math.cos(p.u * .3) * hr; Y = Math.sin(p.u * .3) * hr; Z = Math.sin(p.j) * .35; }
-   else if (idle >= 1){ var ir = .35 + .75 * Math.pow(p.k, .6) + .06 * Math.sin(p.j), ph = p.v + p.u * .08, sv = Math.sin(ph); X = ir * sv * Math.cos(p.u * .22 + p.j * .05); Y = ir * Math.cos(ph) * .8; Z = ir * sv * Math.sin(p.u * .22 + p.j * .05); }
+   else if (idle >= .999){ var ir = .35 + .75 * Math.pow(p.k, .6) + .06 * Math.sin(p.j), ph = p.v + p.u * .08, sv = Math.sin(ph); X = ir * sv * Math.cos(p.u * .22 + p.j * .05); Y = ir * Math.cos(ph) * .8; Z = ir * sv * Math.sin(p.u * .22 + p.j * .05); }
    else {
     var r = tube * (.4 + p.k * .6), ring = Rm + r * Math.cos(p.v);
     X = ring * Math.cos(p.u); Y = ring * Math.sin(p.u);
@@ -460,10 +461,10 @@ function setVal(v, quiet){
 }
 function onPt(e){ var r = dots.getBoundingClientRect(); setVal(Math.round(10 * (e.clientX - r.left) / r.width)); }
 dots.addEventListener('pointerdown', function(e){ dots.setPointerCapture(e.pointerId); onPt(e); });
-dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); else if (e.pointerType === 'mouse' && val !== null){ var r = dots.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (e.clientX - r.left) / r.width)))); } });
+dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); else if (e.pointerType === 'mouse'){ var r = dots.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (e.clientX - r.left) / r.width)))); } });
 dots.addEventListener('pointerleave', function(){ field.set(val); });
 document.getElementById('jot').addEventListener('input', function(){ document.getElementById('noteState').textContent = this.value.trim() ? '·' : ''; });
-document.getElementById('fieldWrap').addEventListener('pointermove', function(e){ if (e.pointerType !== 'mouse' || e.buttons || val === null) return; var r = e.currentTarget.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (1 - (e.clientY - r.top) / r.height))))); });
+document.getElementById('fieldWrap').addEventListener('pointermove', function(e){ if (e.pointerType !== 'mouse' || e.buttons) return; var r = e.currentTarget.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (1 - (e.clientY - r.top) / r.height))))); });
 document.getElementById('fieldWrap').addEventListener('pointerleave', function(){ field.set(val); });
 
 
