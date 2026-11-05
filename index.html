@@ -66,10 +66,11 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
 .sec .q::after{ content:''; display:block; width:28px; height:2px; margin-top:10px; background:var(--line2); }
-.drain .q::after{ background:var(--rose); } .add .q::after{ background:var(--mint); } .body .q::after{ background:var(--gold); }
-.drain .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
-.add .chip.on{ background:var(--mint); border-color:var(--mint); color:var(--bg); }
-.body .chip.on{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
+.drain .q::after{ background:var(--violet); } .add .q::after{ background:var(--mint); } .body .q::after{ background:var(--gold); }
+.chip{ transition:background .25s, border-color .25s, color .25s, transform .18s; } .chip:active{ transform:scale(.96); }
+.drain .chip.on{ background:rgba(139,111,214,.22); border-color:var(--violet); color:var(--ink); }
+.add .chip.on{ background:rgba(33,246,188,.14); border-color:var(--mint); color:var(--ink); }
+.body .chip.on{ background:rgba(255,211,107,.14); border-color:var(--gold); color:var(--ink); }
 textarea,input[type=text],input[type=password]{ width:100%; background:transparent; border:1px solid var(--line); border-radius:6px; color:var(--ink); font:inherit; font-size:16px; padding:11px 13px; outline:none; }
 textarea{ resize:none; min-height:48px; }
 textarea:focus,input:focus{ border-color:var(--orchid); }
@@ -91,7 +92,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .fold summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:12px 0; font-size:14px; }
 .fold summary::-webkit-details-marker{ display:none; } .fold summary em{ font-style:normal; color:var(--orchid); }
 .fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:10px 0 6px; }
-.cyc .chip.on{ background:var(--rose); border-color:var(--rose); color:var(--bg); }
+.cyc .chip.on{ background:rgba(255,110,156,.16); border-color:var(--rose); color:var(--ink); }
 
 .sky{ margin-top:40px; }
 .nav{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
@@ -556,7 +557,8 @@ function resetForm(){
 // ── the sky: 28 days across, 24 hours down ───────────────────────────
 var skyOff = 0, skyC = document.getElementById('skyC'), skyPts = [];
 function skyDays(){ var end = new Date(); end.setHours(12,0,0,0); end.setDate(end.getDate() + skyOff * 28); var d = []; for (var i = 27; i >= 0; i--){ var x = new Date(end); x.setDate(end.getDate() - i); d.push(localISO(x).slice(0,10)); } return d; }
-function paintSky(){
+function paintSky(now, anim){
+ now = now || performance.now();
  var days = skyDays(), W = skyC.clientWidth || 340, H = 300, r = dpr(), x = skyC.getContext('2d');
  skyC.width = W * r; skyC.height = (H + 26) * r; skyC.style.height = (H + 26) + 'px'; x.setTransform(r, 0, 0, r, 0, 0); x.clearRect(0, 0, W, H + 26);
  var L = 30, T = 8, B = T + H - 20, cw = (W - L - 4) / 28, mono = css('--mono'), tod = todayStr();
@@ -577,7 +579,11 @@ function paintSky(){
   var isT = days[+i] === tod;
   if (ps.length > 1){ x.strokeStyle = isT ? 'rgba(189,166,255,.85)' : 'rgba(139,111,214,.55)'; x.lineWidth = isT ? 1.5 : 1; x.beginPath(); ps.forEach(function(p, k){ k ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y); }); x.stroke(); }
   if (isT){ var lp = ps[ps.length - 1], nn = new Date(), nhh = nn.getHours() + nn.getMinutes() / 60; if (Y(nhh) > lp.y + 8){ x.save(); x.setLineDash([2, 4]); x.strokeStyle = 'rgba(189,166,255,.45)'; x.lineWidth = 1; x.beginPath(); x.moveTo(lp.x, lp.y); x.lineTo(lp.x, Y(nhh) - 5); x.stroke(); x.restore(); } }
-  ps.forEach(function(p){ x.fillStyle = shade(p.e.e); x.beginPath(); x.arc(p.x, p.y, 3.5 + p.e.e / 6, 0, Math.PI * 2); x.fill(); skyPts.push(p); });
+  ps.forEach(function(p, k){ var e = p.e, r = 2 + e.e * .3, ph = (+i) * 1.3 + k * 2.1, tw = .7 + .3 * Math.sin(now / 700 + ph), col = shade(e.e);
+   x.globalAlpha = tw; x.fillStyle = col; x.fillRect(p.x - .75, p.y - r, 1.5, r * 2); x.fillRect(p.x - r, p.y - .75, r * 2, 1.5);
+   var n = Math.min(5, (e.drainChips || []).length + (e.addChips || []).length + (e.body || []).length);
+   for (var q = 0; q < n; q++){ var a = now / 2600 * (1 + q * .13) + ph + q * 2.1, rr = r + 3 + (q % 3) * 1.6; x.globalAlpha = .3 + .4 * tw; x.fillRect(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * .6, 1.2, 1.2); }
+   x.globalAlpha = 1; skyPts.push(p); });
  });
  // now
  var ti = days.indexOf(tod);
@@ -585,8 +591,13 @@ function paintSky(){
  var f = { month:'short', day:'numeric' }, d0 = new Date(days[0] + 'T12:00:00'), d1 = new Date(days[27] + 'T12:00:00');
  document.getElementById('skyTtl').textContent = skyOff === 0 ? 'the last four weeks' : d0.toLocaleDateString(undefined, f).toLowerCase() + ' – ' + d1.toLocaleDateString(undefined, f).toLowerCase();
  document.getElementById('next').disabled = skyOff >= 0;
- paintInsight(log);
+ if (!anim) paintInsight(log);
 }
+var skyRaf = 0, skyOn = false;
+function skyFrame(now){ skyRaf = 0; if (!skyOn || document.hidden) return; paintSky(now, true); skyRaf = requestAnimationFrame(function(t){ skyRaf = requestAnimationFrame(skyFrame); }); }
+function skyGo(){ if (!skyRaf && skyOn && !document.hidden) skyRaf = requestAnimationFrame(skyFrame); }
+if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ skyOn = en[0].isIntersecting; skyGo(); }).observe(skyC); else { skyOn = true; skyGo(); }
+document.addEventListener('visibilitychange', skyGo);
 skyC.addEventListener('pointerdown', function(ev){
  var r = skyC.getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top, best = null, bd = 18 * 18;
  skyPts.forEach(function(p){ var d = (p.x - px) * (p.x - px) + (p.y - py) * (p.y - py); if (d < bd){ bd = d; best = p; } });
