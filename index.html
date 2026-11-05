@@ -29,14 +29,14 @@ canvas{ display:block; }
 .top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
 .when{ color:var(--mute); font-size:14px; letter-spacing:.04em; }
 h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em; }
-.today{ display:block; height:22px; margin-top:8px; width:220px; }
+.today{ display:block; height:30px; margin-top:6px; width:260px; }
 .sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; --sc:var(--mute); opacity:.5; }
-.sync::before,.sync::after{ content:''; position:absolute; left:50%; top:50%; background:var(--sc); transform:translate(-50%,-50%); animation:twinkle 3.2s ease-in-out infinite; }
-.sync::before{ width:2px; height:12px; } .sync::after{ width:12px; height:2px; }
-.sync.on{ --sc:var(--mint); opacity:1; } .sync.wait{ --sc:var(--gold); opacity:1; } .sync.wait::before,.sync.wait::after{ animation-duration:.9s; } .sync.err{ --sc:var(--rose); opacity:1; }
+.sync svg{ position:absolute; left:8px; top:8px; width:18px; height:18px; color:var(--sc); animation:spin 14s linear infinite, twinkle 3.2s ease-in-out infinite; }
+.sync.on{ --sc:var(--mint); opacity:1; } .sync.wait{ --sc:var(--gold); opacity:1; } .sync.wait svg{ animation-duration:2s, .9s; } .sync.err{ --sc:var(--rose); opacity:1; }
 .sync i{ position:absolute; left:50%; top:50%; width:2px; height:2px; background:var(--sc); margin:-1px; animation:orbit 5s linear infinite; opacity:.8; } .sync i+i{ animation-delay:-2.5s; animation-duration:7s; }
-@keyframes twinkle{ 50%{ transform:translate(-50%,-50%) scale(.55); opacity:.55 } }
-@keyframes orbit{ from{ transform:rotate(0) translateX(11px) } to{ transform:rotate(360deg) translateX(11px) } }
+@keyframes twinkle{ 50%{ opacity:.5 } }
+@keyframes spin{ to{ transform:rotate(360deg) } }
+@keyframes orbit{ from{ transform:rotate(0) translateX(12px) } to{ transform:rotate(360deg) translateX(12px) } }
 
 .k{ color:var(--mute); font-size:13px; letter-spacing:.08em; margin:0 0 6px; }
 .q{ font:italic 400 24px/1.25 var(--serif); margin:0 0 14px; color:var(--ink); }
@@ -71,7 +71,7 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .sec .q::after{ content:''; display:block; width:28px; height:2px; margin-top:10px; background:var(--line2); }
 .drain .q::after{ background:var(--violet); } .add .q::after{ background:var(--mint); } .body .q::after{ background:var(--gold); }
 .chip{ transition:background .25s, border-color .25s, color .25s, transform .18s; } .chip:active{ transform:scale(.96); }
-.spark{ position:fixed; left:0; top:0; width:10px; height:10px; pointer-events:none; z-index:20; } .spark::before,.spark::after{ content:''; position:absolute; left:50%; top:50%; background:var(--sc); transform:translate(-50%,-50%); } .spark::before{ width:2px; height:10px; } .spark::after{ width:10px; height:2px; }
+.spark{ position:fixed; left:-7px; top:-7px; width:14px; height:14px; pointer-events:none; z-index:20; color:var(--sc); } .spark svg{ width:100%; height:100%; animation:spin 2s linear infinite; }
 .drain .chip.on{ background:rgba(139,111,214,.22); border-color:var(--violet); color:var(--ink); }
 .add .chip.on{ background:rgba(33,246,188,.14); border-color:var(--mint); color:var(--ink); }
 .body .chip.on{ background:rgba(255,211,107,.14); border-color:var(--gold); color:var(--ink); }
@@ -130,7 +130,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 
 <div class="top">
  <div><div class="when" id="when">—</div><h1 id="slot">energy</h1><canvas class="today" id="todayStrip" width="1" height="1" aria-label="check-ins today"></canvas></div>
- <div class="sync" id="syncDot"><i></i><i></i></div>
+ <div class="sync" id="syncDot"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg><i></i><i></i></div>
 </div>
 
 <p class="q">how much energy is in you right now?</p>
@@ -139,7 +139,6 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="mid"><div class="num none" id="num">–</div></div>
 </div>
 <div class="word" id="word"></div>
-<div class="whisper" id="whisper"></div>
 <div class="dots" id="dots" role="slider" aria-valuemin="0" aria-valuemax="10" aria-label="Energy, 0 empty to 10 full"></div>
 <div class="ends"><span>empty</span><span>full</span></div>
 
@@ -174,7 +173,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <canvas id="skyC"></canvas>
  <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, as many or as few as you like. each day its own small constellation.</p>
  <div class="note" id="note"></div>
- <div class="insight" id="insight"></div>
+ <details class="fold" id="insFold"><summary>patterns</summary><div class="insight" id="insight"></div></details>
 </div>
 
 <details class="fold cyc" id="cyc">
@@ -215,10 +214,18 @@ function toast(m){ var t = document.getElementById('toast'); t.textContent = m; 
 function esc(s){ return String(s).replace(/[&<>"]/g, function(ch){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]; }); }
 function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function dpr(){ return Math.min(3, devicePixelRatio || 1); }
+// a five-point star drawn as dots along its outline, slowly turning
+function dotStar(x, cx, cy, r, rot, col, alpha){
+ x.beginPath();
+ for (var i = 0; i < 10; i++){ var a = rot + i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .42 : r; i ? x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr) : x.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
+ x.closePath(); x.globalAlpha = alpha; x.strokeStyle = col; x.lineWidth = 1.1; x.lineCap = 'round'; x.setLineDash([1.4, 2.1]); x.stroke(); x.setLineDash([]);
+ x.fillStyle = col; x.fillRect(cx - 1, cy - 1, 2, 2); x.globalAlpha = 1;
+}
 
 // Slot comes from the clock, never from a picker. Windows sit late on purpose.
 var SLOTS = ['morning','midday','afternoon','evening'];
 var LOG_REPO = 'energyLog';
+var STAR_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg>';
 var SLOT_Q = ['this morning', 'since midday', 'this afternoon', 'this evening'];
 var SLOT_H = [12, 15, 20];
 function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 12 ? 0 : h < 15 ? 1 : h < 20 ? 2 : 3; }
@@ -282,18 +289,17 @@ function paintHead(){
  strip.set(tod);
 }
 var strip = (function(){
- var c = document.getElementById('todayStrip'), x = c.getContext('2d'), list = [], raf = 0, W = 220, H = 22;
+ var c = document.getElementById('todayStrip'), x = c.getContext('2d'), list = [], raf = 0, W = 260, H = 30;
  function size(){ var r = dpr(); c.width = W * r; c.height = H * r; x.setTransform(r, 0, 0, r, 0, 0); }
  function hex(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
  function frame(now){
   raf = 0; if (document.hidden) return;
   x.clearRect(0, 0, W, H);
   list.forEach(function(s, i){
-   var gap = Math.min(24, (W - 16) / Math.max(1, list.length - 1)), cx = 8 + i * gap, cy = H / 2, tw = .7 + .3 * Math.sin(now / 700 + s.ph), col = s.col;
+   var gap = Math.min(30, (W - 24) / Math.max(1, list.length - 1)), cx = 12 + i * gap, cy = H / 2, tw = .7 + .3 * Math.sin(now / 700 + s.ph), col = s.col;
    // the core: a four-point star, bigger with more energy
-   var r = 2 + s.e * .35;
-   x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + tw.toFixed(2) + ')';
-   x.fillRect(cx - 1, cy - r, 2, r * 2); x.fillRect(cx - r, cy - 1, r * 2, 2);
+   var r = 5 + s.e * .5;
+   dotStar(x, cx, cy, r, now / 9000 + s.ph, 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')', tw);
    // satellites: one spark per thing that was logged with it, slowly orbiting
    for (var k = 0; k < s.n; k++){ var a = now / 2400 * (1 + k * .13) + s.ph + k * 2.1, rr = 6 + (k % 3) * 1.8; x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + (.35 + .4 * tw).toFixed(2) + ')'; x.fillRect(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .5, 1.5, 1.5); }
   });
@@ -446,7 +452,6 @@ function setVal(v, quiet){
  tint(v);
  var num = document.getElementById('num'); num.textContent = v; num.classList.remove('none');
  var wd = document.getElementById('word'); wd.textContent = WORDS[v]; wd.classList.add('show');
- var band = v <= 3 ? 'lo' : v >= 8 ? 'hi' : 'mid', wh = document.getElementById('whisper'); if (band !== wh.dataset.band){ wh.dataset.band = band; wh.textContent = WHISPER[band][Math.floor(Math.random() * WHISPER[band].length)]; wh.classList.add('show'); }
  stars.set(v);
  dots.setAttribute('aria-valuenow', v);
  var sv = document.getElementById('save'); sv.disabled = false; sv.textContent = 'save';
@@ -524,7 +529,7 @@ function spark(fromEl, kind){
  var x0 = r.left + r.width / 2, y0 = r.top + r.height / 2, x1 = f.left + f.width / 2, y1 = f.top + f.height / 2;
  if (y1 < -40) y1 = -20; // field is scrolled away: the spark just leaves upward
  for (var i = 0; i < 3; i++){
-  var el = document.createElement('div'); el.className = 'spark'; el.style.setProperty('--sc', col); document.body.appendChild(el);
+  var el = document.createElement('div'); el.className = 'spark'; el.style.setProperty('--sc', col); el.innerHTML = STAR_SVG; document.body.appendChild(el);
   var dx = (Math.random() - .5) * 60, bend = (Math.random() - .5) * 120;
   el.animate([{ transform:'translate(' + x0 + 'px,' + y0 + 'px) scale(.6)', opacity:0 }, { transform:'translate(' + (x0 + bend) + 'px,' + ((y0 + y1) / 2) + 'px) scale(1.3)', opacity:1, offset:.45 }, { transform:'translate(' + (x1 + dx) + 'px,' + y1 + 'px) scale(.3)', opacity:0 }], { duration:850 + i * 120, easing:'cubic-bezier(.3,.6,.4,1)', delay:i * 60 }).onfinish = (function(e){ return function(){ e.remove(); }; })(el);
  }
@@ -562,7 +567,7 @@ document.getElementById('save').addEventListener('click', function(){
 function resetForm(){
  val = null; tint(null); dots.classList.remove('set'); document.getElementById('dFill').style.width = 0; document.getElementById('dThumb').style.left = '50%';
  var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
- document.getElementById('word').classList.remove('show'); var wh0 = document.getElementById('whisper'); wh0.classList.remove('show'); wh0.dataset.band = ''; stars.set(null);
+ document.getElementById('word').classList.remove('show'); stars.set(null);
  own = { drain:[], add:[], body:[] };
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
  openKinds = {}; ownOpen = {};
@@ -596,7 +601,7 @@ function paintSky(now, anim){
   if (ps.length > 1){ x.strokeStyle = isT ? 'rgba(189,166,255,.85)' : 'rgba(139,111,214,.55)'; x.lineWidth = isT ? 1.5 : 1; x.beginPath(); ps.forEach(function(p, k){ k ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y); }); x.stroke(); }
   if (isT){ var lp = ps[ps.length - 1], nn = new Date(), nhh = nn.getHours() + nn.getMinutes() / 60; if (Y(nhh) > lp.y + 8){ x.save(); x.setLineDash([2, 4]); x.strokeStyle = 'rgba(189,166,255,.45)'; x.lineWidth = 1; x.beginPath(); x.moveTo(lp.x, lp.y); x.lineTo(lp.x, Y(nhh) - 5); x.stroke(); x.restore(); } }
   ps.forEach(function(p, k){ var e = p.e, r = 2 + e.e * .3, ph = (+i) * 1.3 + k * 2.1, tw = .7 + .3 * Math.sin(now / 700 + ph), col = shade(e.e);
-   x.globalAlpha = tw; x.fillStyle = col; x.fillRect(p.x - .75, p.y - r, 1.5, r * 2); x.fillRect(p.x - r, p.y - .75, r * 2, 1.5);
+   dotStar(x, p.x, p.y, r + 3, now / 9000 + ph, col, tw);
    var n = Math.min(5, (e.drainChips || []).length + (e.addChips || []).length + (e.body || []).length);
    for (var q = 0; q < n; q++){ var a = now / 2600 * (1 + q * .13) + ph + q * 2.1, rr = r + 3 + (q % 3) * 1.6; x.globalAlpha = .3 + .4 * tw; x.fillRect(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * .6, 1.2, 1.2); }
    x.globalAlpha = 1; skyPts.push(p); });
