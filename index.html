@@ -428,7 +428,7 @@ function paintCycState(){
 var START = {
  drain:['juggling too many threads','too many claude sessions','annoying people','something unfair','anxiety or worry','tiredness','poor sleep','cognitive overload','overwhelm','chores','soreness','meetings','skipped a meal','late screens','loud places','feeling alone'],
  add:['hobbies','music','making a song','singing','gym','a hike','walk','getting outside','sunshine','socializing','friends','a good convo','huggies','loviness','cozy','hot tub','laughing','finishing something','doing nothing','a good sleep'],
- body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
+ body:['water','food','bathroom','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
 function learned(kind){
  var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24) cnt[w] = (cnt[w] || 0) + 1; }); });
@@ -468,7 +468,7 @@ document.getElementById('save').addEventListener('click', function(){
  field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky();
  var af = document.getElementById('after');
  if (bc.indexOf('a long breath') >= 0) af.innerHTML = 'saved.<a id="afBreath">breathe?</a>';
- else if (bc.indexOf('slow down') >= 0 || bc.indexOf('rest') >= 0) af.innerHTML = 'saved.<a id="afStill">a minute of nothing?</a>';
+ else if (bc.indexOf('slow down') >= 0) af.innerHTML = 'saved.<a id="afStill">a minute of nothing?</a>';
  else af.textContent = 'saved.';
  var ab = document.getElementById('afBreath'), as = document.getElementById('afStill');
  if (ab) ab.addEventListener('click', function(){ breath.start('breath'); }); if (as) as.addEventListener('click', function(){ breath.start('still'); });
