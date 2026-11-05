@@ -180,9 +180,9 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 
 <details id="ghBox" class="gh">
  <summary>sync <em id="ghState">not connected</em></summary>
- <p>There is no server. Entries live in this browser and in a private repo you own. Make a <strong>fine-grained</strong> token with <strong>Contents: read and write</strong> on that one repo and nothing else.</p>
+ <p>There is no server. Entries live in this browser and in a private repo of yours named <strong>energyLog</strong>. Make a <strong>fine-grained</strong> token with <strong>Contents: read and write</strong> on that one repo and nothing else.</p>
  <form id="ghForm" autocomplete="on">
- <label>repo<input id="ghRepo" type="text" name="username" autocomplete="username" readonly value="tsowrira/energyLog"></label>
+ <input type="text" name="username" autocomplete="username" value="energy" readonly tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
  <label>token<input id="ghTok" type="password" name="password" autocomplete="current-password" placeholder="github_pat_…"></label>
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
@@ -212,6 +212,7 @@ function dpr(){ return Math.min(3, devicePixelRatio || 1); }
 
 // Slot comes from the clock, never from a picker. Windows sit late on purpose.
 var SLOTS = ['morning','midday','afternoon','evening'];
+var LOG_REPO = 'energyLog';
 var SLOT_Q = ['this morning', 'since midday', 'this afternoon', 'this evening'];
 var SLOT_H = [12, 15, 20];
 function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 12 ? 0 : h < 15 ? 1 : h < 20 ? 2 : 3; }
@@ -259,7 +260,7 @@ var strip = (function(){
   raf = 0; if (document.hidden) return;
   x.clearRect(0, 0, W, H);
   list.forEach(function(s, i){
-   var cx = 8 + i * 24, cy = H / 2, tw = .7 + .3 * Math.sin(now / 700 + s.ph), col = s.col;
+   var gap = Math.min(24, (W - 16) / Math.max(1, list.length - 1)), cx = 8 + i * gap, cy = H / 2, tw = .7 + .3 * Math.sin(now / 700 + s.ph), col = s.col;
    // the core: a four-point star, bigger with more energy
    var r = 2 + s.e * .35;
    x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + tw.toFixed(2) + ')';
@@ -612,8 +613,7 @@ function offline(e){ return e instanceof TypeError || !navigator.onLine; }
 function no404(c){ return 'Cannot see ' + c.repo + '. Check the name, and that the token was made for that repo only.'; }
 
 function paintGH(){
- var c = readGH(), st = document.getElementById('ghState'), n = document.getElementById('ghNote'), r = document.getElementById('ghRepo');
- if (c && document.activeElement !== r) r.value = c.repo;
+ var c = readGH(), st = document.getElementById('ghState'), n = document.getElementById('ghNote');
  var dot = document.getElementById('syncDot');
  dot.className = 'sync ' + (!c ? 'off' : c.err ? 'err' : store.get('en-dirty') ? 'wait' : 'on');
  if (!c){ st.textContent = 'not connected'; n.textContent = ''; return; }
@@ -679,13 +679,14 @@ window.addEventListener('online', flush);
 
 document.getElementById('ghForm').addEventListener('submit', function(ev){
  ev.preventDefault();
- var repo = 'tsowrira/energyLog';
  var tok = document.getElementById('ghTok').value.trim(), old = readGH();
- if (!/^[\w.-]+\/[\w.-]+$/.test(repo)){ toast('Repo looks like owner/name'); return; }
  if (!tok && old) tok = old.tok;
  if (!tok){ toast('Paste a token'); return; }
- writeGH({ repo:repo, tok:tok }); document.getElementById('ghTok').value = ''; paintGH(); toast('Connecting…');
- ghPull().then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } });
+ document.getElementById('ghTok').value = ''; toast('Connecting…');
+ fetch(GH_API + '/user', { headers:ghHead({ tok:tok }), cache:'no-store' }).then(function(r){ if (!r.ok) throw new Error('That token was not accepted.'); return r.json(); }).then(function(u){
+  writeGH({ repo:u.login + '/' + LOG_REPO, tok:tok }); paintGH();
+  return ghPull();
+ }).catch(function(e){ toast(e.message || 'Could not connect'); }).then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } });
 });
 document.getElementById('ghNow').addEventListener('click', function(){ if (!readGH()){ toast('Connect first'); return; } ghPull().then(function(){ var c = readGH(); if (c && !c.err){ store.set('en-dirty', '1'); return ghPush(); } }); });
 document.getElementById('ghOff').addEventListener('click', function(){ if (!readGH()) return; if (!confirm('Forget the token on this device? Everything already synced stays in the repo.')) return; writeGH(null); paintGH(); toast('Forgotten'); });
