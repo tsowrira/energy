@@ -310,8 +310,11 @@ var field = (function(){
  if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ en[0].isIntersecting ? start() : stop(); }).observe(wrap);
  // a tap sets the number; the dots below take drags, so the page still scrolls
  var down = null;
- wrap.addEventListener('pointerdown', function(e){ down = { x:e.clientX, y:e.clientY }; });
- wrap.addEventListener('pointerup', function(e){ if (!down || Math.abs(e.clientY - down.y) > 8 || Math.abs(e.clientX - down.x) > 8){ down = null; return; } down = null; var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); });
+ var sliding = false;
+ wrap.addEventListener('pointerdown', function(e){ down = { x:e.clientX, y:e.clientY, v:val }; sliding = false; });
+ wrap.addEventListener('pointermove', function(e){ if (!down || !(e.buttons || e.pressure)) return; var dx = e.clientX - down.x, dy = e.clientY - down.y; if (!sliding && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)){ sliding = true; try { wrap.setPointerCapture(e.pointerId); } catch(_){} } if (sliding) setVal((down.v === null ? 5 : down.v) + Math.round(dx / (wrap.clientWidth / 14))); });
+ wrap.addEventListener('pointercancel', function(){ down = null; sliding = false; });
+ wrap.addEventListener('pointerup', function(e){ if (sliding){ down = null; sliding = false; return; } if (!down || Math.abs(e.clientY - down.y) > 8 || Math.abs(e.clientX - down.x) > 8){ down = null; return; } down = null; var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); });
  return { set:function(v){ tgt.t = v === null ? -1 : v / 10; }, hide:function(h){ hidden = h; h ? stop() : start(); }, burst:function(){ burst = 1; start(); } };
 })();
 function paintDial(){ field.set(val); }
@@ -431,13 +434,13 @@ function paintCycState(){
 // ── chips ────────────────────────────────────────────────────────────
 // Starters are hers. Her own typed words join once she has used them twice.
 var START = {
- drain:['juggling too many threads','too many claude sessions','annoying people','something unfair','anxiety or worry','tiredness','poor sleep','cognitive overload','soreness','meetings','skipped a meal','late screens','loud places','feeling alone','travel'],
+ drain:['juggling too many threads','too many claude sessions','annoying people','something unfair','anxiety or worry','tiredness','poor sleep','cognitive overload','overwhelm','chores','soreness','meetings','skipped a meal','late screens','loud places','feeling alone','travel'],
  add:['hobbies','music','making a song','singing','gym','a hike','walk','getting outside','sunshine','socializing','friends','a good convo','huggies','loviness','cozy','hot tub','laughing','finishing something','doing nothing','a good sleep'],
  body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
 function learned(kind){
  var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).concat(e[kind] ? [e[kind]] : []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24) cnt[w] = (cnt[w] || 0) + 1; }); });
- return Object.keys(cnt).filter(function(w){ return cnt[w] >= 2 && START[kind].indexOf(w) < 0; }).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 6);
+ return Object.keys(cnt).filter(function(w){ return cnt[w] >= 1 && START[kind].indexOf(w) < 0; }).sort(function(a,b){ return cnt[b] - cnt[a]; }).slice(0, 6);
 }
 function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
 var openKinds = {}, own = { drain:[], add:[], body:[] };
