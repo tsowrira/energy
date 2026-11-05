@@ -69,7 +69,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 ::placeholder{ color:var(--mute); opacity:.8; }
 
 .save{ position:sticky; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:5; display:block; width:100%; margin:28px 0 10px; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
-.save:disabled{ background:var(--bg); color:var(--mute); border-color:var(--line); }
+.save:disabled{ background:var(--bg); color:var(--mute); border-color:var(--line); opacity:.45; }
 .after{ text-align:center; color:var(--mint); font-size:14px; min-height:22px; } .after a{ color:var(--orchid); text-decoration:underline; text-underline-offset:3px; margin-left:8px; cursor:pointer; }
 .calm{ text-align:center; margin-top:10px; font-size:14px; color:var(--mute); } .calm a{ display:inline-block; padding:12px 10px; color:var(--mute); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .br{ position:fixed; inset:0; z-index:20; background:var(--bg); display:none; }
@@ -152,7 +152,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="tags"><div class="chips" id="tagChips"></div><input id="tags" type="text" placeholder="a word, then space" autocapitalize="off" autocorrect="off" enterkeyhint="done"></div>
 </details>
 
-<button class="save" id="save" disabled>pick a number</button>
+<button class="save" id="save" disabled>save</button>
 <div class="after" id="after"></div>
 <div class="calm"><a id="goBreath">breathe</a>·<a id="goStill">a minute of nothing</a></div>
 <div class="br" id="br"><canvas id="brC"></canvas><div class="brWord" id="brWord"></div><div class="brSub" id="brSub"></div><div class="brX">tap anywhere to stop</div></div>
@@ -161,7 +161,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <p class="k">the sky</p>
  <div class="nav"><button id="prev">‹ earlier</button><div class="ttl" id="skyTtl"></div><button id="next" disabled>later ›</button></div>
  <canvas id="skyC"></canvas>
- <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, each day its own small constellation.</p>
+ <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, as many or as few as you like. each day its own small constellation.</p>
  <div class="note" id="note"></div>
  <div class="insight" id="insight"></div>
 </div>
@@ -242,8 +242,10 @@ function paintHead(){
  document.getElementById('slot').textContent = d.toLocaleDateString(undefined, { weekday:'long' }).toLowerCase() + ' ' + SLOTS[s];
  document.getElementById('when').textContent = d.toLocaleDateString(undefined, { month:'long', day:'numeric' }).toLowerCase();
  document.querySelector('.sec.drain .q').textContent = SLOT_Q[s] + ', what drained it?';
- var done = {}; readLog().forEach(function(e){ if (dayOf(e.t) === todayStr()) done[e.slot] = e; });
- document.getElementById('todayStrip').innerHTML = SLOTS.map(function(k, i){ var e = done[k]; return '<i' + (e ? ' style="background:' + shade(e.e) + ';border-color:' + shade(e.e) + '"' : i === s ? ' class="now"' : '') + '></i>'; }).join('');
+ // one dot per check-in so far today, in its colour; none until the first
+ var tod = readLog().filter(function(e){ return dayOf(e.t) === todayStr(); });
+ document.getElementById('todayStrip').innerHTML = tod.map(function(e){ return '<i style="background:' + shade(e.e) + ';border-color:' + shade(e.e) + '" title="' + e.t.slice(11,16) + '"></i>'; }).join('');
+ document.getElementById('todayStrip').setAttribute('aria-label', tod.length + ' check-ins today');
 }
 
 // ── the field: a manifold of points that breathes with the number ────
@@ -477,7 +479,7 @@ function resetForm(){
  var num = document.getElementById('num'); num.textContent = '–'; num.classList.add('none');
  document.getElementById('word').classList.remove('show');
  document.getElementById('tags').value = ''; own = { drain:[], add:[], body:[] }; tagNew = []; document.getElementById('tagChips').innerHTML = ''; paintTags();
- var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'pick a number';
+ var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
  openKinds = {};
  document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
  document.getElementById('cyc').open = false; document.getElementById('tagFold').open = false;
@@ -497,8 +499,6 @@ function paintSky(){
  [0, 24].concat(SLOT_H).forEach(function(h){ x.beginPath(); x.moveTo(L, Math.round(Y(h)) + .5); x.lineTo(W - 4, Math.round(Y(h)) + .5); x.stroke(); });
  x.font = '10px ' + mono; x.textAlign = 'left'; x.fillStyle = 'rgba(189,166,255,.45)';
  [[6,'morning'],[13.5,'midday'],[17.5,'afternoon'],[22,'evening']].forEach(function(s){ x.fillText(s[1], L + 4, Y(s[0]) - 7); });
- // ghost grid: a faint point for every slot not yet lived or logged
- days.forEach(function(ds, i){ [9, 13.5, 17.5, 22].forEach(function(h){ x.fillStyle = 'rgba(189,166,255,.16)'; x.fillRect(Math.round(X(i)) - 1, Math.round(Y(h)) - 1, 2, 2); }); });
  // day letters; mondays and today stand out
  x.font = '12px ' + mono; x.textAlign = 'center';
  days.forEach(function(ds, i){ var d = new Date(ds + 'T12:00:00'), dow = (d.getDay() + 6) % 7; x.fillStyle = ds === tod ? css('--ink') : dow === 0 ? css('--orchid') : 'rgba(189,166,255,.6)'; x.fillText('MTWTFSS'[dow], X(i), B + 12); });
