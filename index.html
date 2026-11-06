@@ -541,11 +541,12 @@ function paintChips(){
   Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
   var cnt = tally(kind).cnt, list = START[kind].concat(learned(kind)).map(function(w, i){ return { w:w, i:i, n:cnt[w] || 0 }; }).sort(function(a, b){ return b.n - a.n || a.i - b.i; }).map(function(o){ return o.w; }), full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
   var show = (full ? list : list.slice(0, 6)).concat(own[kind].filter(function(w){ return list.indexOf(w) < 0; }));
-  var h = show.map(function(w){ return '<span class="chip' + (on[w] || own[kind].indexOf(w) >= 0 ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
+  var h = show.map(function(w){ return '<span class="chip' + (on[w] ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
   if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
   h.push(ownOpen[kind] ? '<span class="chip own" data-own="1"><input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done"></span>' : '<span class="chip own" data-own="1">+ your own</span>');
+  var typing = box.querySelector('.chip[data-own] input'), kept = typing ? typing.value : '';
   box.innerHTML = h.join('');
-  if (ownOpen[kind]) wireOwn(kind, box, list);
+  if (ownOpen[kind]) wireOwn(kind, box, list, kept);
   Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
    if (c.dataset.own){ if (c.querySelector('input')) return; ownOpen[kind] = 1; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; wireOwn(kind, box, list); return; }
@@ -574,10 +575,11 @@ function spark(fromEl, kind){
   ], { duration:1100 + Math.random() * 700, easing:'cubic-bezier(.4,.2,.3,1)', delay:Math.random() * 260 }).onfinish = (function(e){ return function(){ e.remove(); }; })(el);
  }
 }
-function wireOwn(kind, box, list){
- var inp = box.querySelector('.chip[data-own] input'); if (!inp) return; inp.focus();
+function wireOwn(kind, box, list, kept){
+ var inp = box.querySelector('.chip[data-own] input'); if (!inp) return; if (kept) inp.value = kept;
+ try { inp.focus({ preventScroll:true }); } catch(_){ inp.focus(); }
  // a word already on the list just lights that chip; return keeps the box open for the next one
- var done = function(again){ var ws = inp.value.split(',').map(function(w){ return w.trim().toLowerCase().slice(0, 30); }).filter(Boolean); inp.value = ''; if (!ws.length && !again){ paintChips(); return; }
+ var done = function(again){ var ws = inp.value.split(',').map(function(w){ return w.trim().toLowerCase().slice(0, 30); }).filter(Boolean); inp.value = ''; if (!ws.length && !again){ ownOpen[kind] = 0; paintChips(); return; }
      ws.forEach(function(w){ if (list.indexOf(w) < 0 && own[kind].indexOf(w) < 0) own[kind].push(w); });
      if (ws.some(function(w){ return list.indexOf(w) >= 6; })) openKinds[kind] = 1;
      ownOpen[kind] = again ? 1 : 0; paintChips(); ws.forEach(function(w){ Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(c){ if (c.dataset.w === w) c.classList.add('on'); }); }); };
@@ -746,7 +748,7 @@ function ghPull(quiet){
   var cc = readGH(); if (!cc) return 0;
   cc.sha = j.sha; delete cc.err; writeGH(cc);
   var data = null; try { data = JSON.parse(b64dec(j.content)); } catch(e){ throw new Error('log.json in the repo is not valid JSON.'); }
-  var n = merge(data); if (n){ paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); } paintGH(); return n;
+  var n = merge(data); if (n){ paintHead(); if (!document.querySelector('.chip input')) paintChips(); paintCyc(); paintDial(); paintSky(); } paintGH(); return n;
  }).catch(function(e){ if (offline(e)) return false; var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
 }
 var busy = null;
