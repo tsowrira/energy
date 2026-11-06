@@ -525,9 +525,12 @@ var START = {
  add:['hobbies','music','making a song','singing','gym','a hike','walk','getting outside','sunshine','socializing','friends','a good convo','huggies','loviness','cozy','hot tub','laughing','finishing something','doing nothing','a good sleep'],
  body:['water','food','bathroom','rest','move','stretch','a long breath','slow down','fresh air','warmth','cool air','quiet','alone time','people','sun']
 };
-function learned(kind){
+function tally(kind){
  var cnt = {}, last = {}; readLog().forEach(function(e){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (w && w.split(/\s+/).length <= 3 && w.length <= 24){ cnt[w] = (cnt[w] || 0) + 1; last[w] = e.t; } }); });
- var week = localISO(new Date(Date.now() - 7 * 864e5));
+ return { cnt:cnt, last:last };
+}
+function learned(kind){
+ var t = tally(kind), cnt = t.cnt, last = t.last, week = localISO(new Date(Date.now() - 7 * 864e5));
  return Object.keys(cnt).filter(function(w){ return START[kind].indexOf(w) < 0 && (cnt[w] >= 2 || last[w] >= week); }).sort(function(a,b){ return cnt[b] - cnt[a] || (last[b] > last[a] ? 1 : -1); }).slice(0, 4);
 }
 function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
@@ -536,7 +539,7 @@ function paintChips(){
  ['drain','add','body'].forEach(function(kind){
   var box = document.getElementById(kind + 'Chips'), on = {};
   Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
-  var list = START[kind].concat(learned(kind)), full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
+  var cnt = tally(kind).cnt, list = START[kind].concat(learned(kind)).map(function(w, i){ return { w:w, i:i, n:cnt[w] || 0 }; }).sort(function(a, b){ return b.n - a.n || a.i - b.i; }).map(function(o){ return o.w; }), full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
   var show = (full ? list : list.slice(0, 6)).concat(own[kind].filter(function(w){ return list.indexOf(w) < 0; }));
   var h = show.map(function(w){ return '<span class="chip' + (on[w] || own[kind].indexOf(w) >= 0 ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
   if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
