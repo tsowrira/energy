@@ -65,8 +65,6 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .chip.more{ color:var(--mute); border-color:transparent; padding-left:4px; padding-right:4px; text-decoration:underline; text-underline-offset:4px; }
 .chip.own{ color:var(--mute); border-style:dashed; }
 .chip input{ background:none; border:0; outline:0; color:var(--ink); font:inherit; width:9em; padding:0; }
-.cyc summary{ font-size:13px; color:var(--mute); opacity:.75; justify-content:flex-start; gap:8px; } .cyc summary em{ color:var(--mute); }
-.cyc summary::before{ content:'›'; display:inline-block; transition:transform .2s; } .cyc[open] summary::before{ transform:rotate(90deg); }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
 .sec .q::after{ content:''; display:block; width:28px; height:2px; margin-top:10px; background:var(--line2); }
@@ -94,7 +92,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .brSub b{ font-weight:400; opacity:.35; transition:opacity .2s, color .2s; } .brSub b.on{ opacity:1; color:var(--ink); }
 .brSub i{ display:block; font-style:normal; font-size:12px; letter-spacing:.08em; margin-top:14px; opacity:.6; }
 .brX{ position:absolute; left:0; right:0; bottom:calc(30px + env(safe-area-inset-bottom)); text-align:center; font-size:14px; color:var(--mute); }
-.fold{ margin-top:22px; border-top:1px solid var(--line2); } .fold.cyc{ border-top:0; margin-top:30px; }
+.fold{ margin-top:22px; border-top:1px solid var(--line2); } .fold.cyc{ margin-top:0; }
 .fold summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:12px 0; font-size:14px; }
 .fold summary::-webkit-details-marker{ display:none; } .fold summary em{ font-style:normal; color:var(--orchid); }
 .fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:10px 0 6px; }
@@ -165,6 +163,13 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <textarea id="jot" rows="3" placeholder="anything on your mind" enterkeyhint="done"></textarea>
 </details>
 
+<details class="fold cyc" id="cyc">
+ <summary>cycle <em id="cycState"></em></summary>
+ <p class="k2">flow</p><div class="chips one" id="cycFlow"></div>
+ <p class="k2">cramps</p><div class="chips one" id="cycCramp"></div>
+ <p class="k2">also</p><div class="chips" id="cycSx"></div>
+</details>
+
 <button class="save" id="save" disabled>save</button>
 <div class="after" id="after"></div>
 <div class="calm"><a id="goBreath">breathe</a>·<a id="goStill">a minute of nothing</a></div>
@@ -178,13 +183,6 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <div class="note" id="note"></div>
  <details class="fold" id="insFold"><summary>patterns</summary><div class="insight" id="insight"></div></details>
 </div>
-
-<details class="fold cyc" id="cyc">
- <summary>cycle <em id="cycState"></em></summary>
- <p class="k2">flow</p><div class="chips one" id="cycFlow"></div>
- <p class="k2">cramps</p><div class="chips one" id="cycCramp"></div>
- <p class="k2">also</p><div class="chips" id="cycSx"></div>
-</details>
 
 <details id="ghBox" class="gh">
  <summary>sync <em id="ghState">not connected</em></summary>
