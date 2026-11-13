@@ -192,7 +192,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <label>token<input id="ghTok" type="password" name="password" autocomplete="current-password" placeholder="github_pat_…"></label>
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
- <div class="row"><button id="exportBtn" type="button">Export file</button></div>
+ <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button></div>
  <div class="st" id="ghNote"></div>
 </details>
 
@@ -405,7 +405,7 @@ var field = (function(){
  var down = null;
  var sliding = false;
  wrap.addEventListener('pointerdown', function(e){ down = { x:e.clientX, y:e.clientY, v:val }; sliding = false; });
- wrap.addEventListener('pointermove', function(e){ if (!down || !(e.buttons || e.pressure)) return; var dx = e.clientX - down.x, dy = e.clientY - down.y; if (!sliding && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)){ sliding = true; try { wrap.setPointerCapture(e.pointerId); } catch(_){} } if (sliding) setVal((down.v === null ? 5 : down.v) + Math.round(dx / (wrap.clientWidth / 14))); });
+ wrap.addEventListener('pointermove', function(e){ if (!down || !(e.buttons || e.pressure)) return; var dx = e.clientX - down.x, dy = e.clientY - down.y; if (!sliding && !down.scroll && Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) down.scroll = true; if (!sliding && !down.scroll && Math.abs(dx) > 22 && Math.abs(dx) > 2.5 * Math.abs(dy)){ sliding = true; try { wrap.setPointerCapture(e.pointerId); } catch(_){} } if (sliding) setVal((down.v === null ? 5 : down.v) + Math.round(dx / (wrap.clientWidth / 14))); });
  wrap.addEventListener('pointercancel', function(){ down = null; sliding = false; });
  wrap.addEventListener('pointerup', function(e){ if (sliding){ down = null; sliding = false; return; } if (!down || Math.abs(e.clientY - down.y) > 8 || Math.abs(e.clientX - down.x) > 8){ down = null; return; } down = null; var r = wrap.getBoundingClientRect(); setVal(Math.round(10 * (1 - (e.clientY - r.top) / r.height))); });
  return { set:function(v){ tgt.t = v === null ? -1 : v / 10; }, hide:function(h){ hidden = h; h ? stop() : start(); }, burst:function(){ burst = 1; start(); }, thumb:function(el){ thumb = el; }, fx:function(k){ fx = 1; fxKind = k; fxV = Math.floor(Math.random() * 3); fxA = .35 + Math.random() * .4; start(); } };
@@ -586,6 +586,110 @@ function wireOwn(kind, box, list, kept){
 }
 function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySelectorAll('#' + kind + 'Chips .chip.on'), function(c){ a.push(c.dataset.w); }); return a; }
 
+// ── a report: one self-contained page built from the log, only offered once connected ──
+function reportHTML(){
+ var L = readLog().filter(okEntry).slice().sort(function(a, b){ return a.t < b.t ? -1 : 1; });
+ var days = {}; L.forEach(function(e){ (days[dayOf(e.t)] = days[dayOf(e.t)] || []).push(e); });
+ var dk = Object.keys(days).sort(), n = L.length, allDays = [];
+ if (dk.length){ for (var dd = new Date(dk[0] + 'T12:00:00'), end = dk[dk.length - 1]; ; dd.setDate(dd.getDate() + 1)){ var ks = localISO(dd).slice(0, 10); allDays.push(ks); if (ks >= end) break; } }
+ var mean = n ? L.reduce(function(s, e){ return s + e.e; }, 0) / n : 0;
+ function fmt(d){ var x = new Date(d + 'T12:00:00'); return x.toLocaleDateString(undefined, { month:'short', day:'numeric' }); }
+ function fmtY(d){ var x = new Date(d + 'T12:00:00'); return x.toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' }); }
+ function star(cx, cy, r, col, a){ var p = []; for (var i = 0; i < 10; i++){ var rr = i % 2 ? r * .42 : r, an = -Math.PI / 2 + i * Math.PI / 5; p.push((cx + Math.cos(an) * rr).toFixed(1) + ',' + (cy + Math.sin(an) * rr).toFixed(1)); } return '<polygon points="' + p.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="1.1" stroke-dasharray="1.6 2" opacity="' + (a || 1) + '"/><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="1.6" fill="' + col + '"/>'; }
+ var H = [];
+ // 1 · the whole stretch as a sky: each check-in a star, each day a faint thread
+ (function(){
+  var W = 720, Hh = 300, pl = 34, pr = 16, pt = 22, pb = 36, iw = W - pl - pr, ih = Hh - pt - pb;
+  var t0 = new Date(dk[0] + 'T00:00:00').getTime(), t1 = new Date(dk[dk.length - 1] + 'T23:59:59').getTime(), span = Math.max(864e5, t1 - t0);
+  function X(t){ return pl + (new Date(t).getTime() - t0) / span * iw; } function Y(v){ return pt + (1 - v / 10) * ih; }
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="sky">';
+  [0, 5, 10].forEach(function(v){ s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" class="rule"/><text x="' + (pl - 8) + '" y="' + (Y(v) + 4) + '" class="ax" text-anchor="end">' + v + '</text>'; });
+  dk.forEach(function(d, i){ var es = days[d]; if (es.length > 1){ s += '<polyline points="' + es.map(function(e){ return X(e.t).toFixed(1) + ',' + Y(e.e).toFixed(1); }).join(' ') + '" class="thread"/>'; } if (dk.length <= 40 || i % Math.ceil(dk.length / 20) === 0) s += '<text x="' + X(d + 'T12:00:00').toFixed(1) + '" y="' + (Hh - 12) + '" class="ax" text-anchor="middle">' + fmt(d) + '</text>'; });
+  s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(mean) + '" y2="' + Y(mean) + '" class="meanline"/><text x="' + (W - pr) + '" y="' + (Y(mean) - 6) + '" class="ax" text-anchor="end">mean ' + mean.toFixed(1) + '</text>';
+  L.forEach(function(e){ s += star(X(e.t), Y(e.e), 6, shade(e.e)); });
+  H.push('<section><h2>every check-in</h2><p class="lede">' + n + ' check-ins over ' + dk.length + ' days, ' + fmtY(dk[0]) + ' to ' + fmtY(dk[dk.length - 1]) + '. Height is the number given, 0 to 10. A thread joins the check-ins of one day.</p>' + s + '</svg></section>');
+ })();
+ // 2 · the shape of a day
+ (function(){
+  var by = [[], [], [], []]; L.forEach(function(e){ var i = SLOTS.indexOf(e.slot); if (i < 0) i = slotFor(new Date(e.t)); by[i].push(e.e); });
+  var W = 720, rowH = 44, Hh = rowH * 4 + 30, pl = 120, pr = 24, iw = W - pl - pr;
+  function X(v){ return pl + v / 10 * iw; }
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="rows">';
+  [0, 2, 4, 6, 8, 10].forEach(function(v){ s += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="10" y2="' + (Hh - 20) + '" class="rule"/><text x="' + X(v) + '" y="' + (Hh - 4) + '" class="ax" text-anchor="middle">' + v + '</text>'; });
+  SLOTS.forEach(function(nm, i){ var v = by[i], y = 10 + i * rowH + rowH / 2; s += '<text x="' + (pl - 14) + '" y="' + (y + 4) + '" class="lab" text-anchor="end">' + nm + '</text>';
+   if (!v.length){ s += '<text x="' + X(0) + '" y="' + (y + 4) + '" class="ax">nothing yet</text>'; return; }
+   var m = v.reduce(function(a, b){ return a + b; }, 0) / v.length, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v);
+   s += '<line x1="' + X(lo) + '" x2="' + X(hi) + '" y1="' + y + '" y2="' + y + '" class="range"/>';
+   var cnt = {}; v.forEach(function(x){ cnt[x] = (cnt[x] || 0) + 1; }); Object.keys(cnt).forEach(function(x){ s += '<circle cx="' + X(+x) + '" cy="' + y + '" r="' + (2 + Math.min(5, cnt[x])) + '" fill="' + shade(+x) + '" opacity=".55"/>'; });
+   s += star(X(m), y, 8, shade(m)) + '<text x="' + (X(m) + 12) + '" y="' + (y - 9) + '" class="ax">' + m.toFixed(1) + ' · ' + v.length + '</text>'; });
+  H.push('<section><h2>the shape of a day</h2><p class="lede">By part of day. The star is the mean, the line the range, the discs how often each number came up.</p>' + s + '</svg></section>');
+ })();
+ // 3 · the grid: days across, parts of day down
+ (function(){
+  var W = 720, cw = Math.max(10, Math.min(56, Math.floor((W - 110) / Math.max(1, allDays.length)))), ch = Math.min(26, cw), pl = 96, pt = 24, Hh = pt + ch * 4 + 30;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="grid">';
+  SLOTS.forEach(function(nm, i){ s += '<text x="' + (pl - 10) + '" y="' + (pt + i * ch + ch / 2 + 4) + '" class="lab" text-anchor="end">' + nm + '</text>'; });
+  allDays.forEach(function(d, j){ var es = days[d] || [], x = pl + j * cw; var dn = new Date(d + 'T12:00:00').getDay();
+   if (cw >= 42 || (cw >= 16 && dn === 1) || (cw < 16 && j % 7 === 0)) s += '<text x="' + (x + cw / 2) + '" y="' + (pt - 8) + '" class="ax" text-anchor="middle">' + fmt(d) + '</text>';
+   for (var i = 0; i < 4; i++){ var v = es.filter(function(e){ return (SLOTS.indexOf(e.slot) >= 0 ? SLOTS.indexOf(e.slot) : slotFor(new Date(e.t))) === i; });
+    if (!v.length){ s += '<rect x="' + (x + 1) + '" y="' + (pt + i * ch + 1) + '" width="' + (cw - 2) + '" height="' + (ch - 2) + '" class="empty"/>'; continue; }
+    var m = v.reduce(function(a, b){ return a + b.e; }, 0) / v.length; s += '<rect x="' + (x + 1) + '" y="' + (pt + i * ch + 1) + '" width="' + (cw - 2) + '" height="' + (ch - 2) + '" rx="3" fill="' + shade(m) + '" opacity="' + (.35 + .065 * m).toFixed(2) + '"><title>' + fmt(d) + ' ' + SLOTS[i] + ': ' + v.map(function(e){ return e.e; }).join(' ') + '</title></rect>';
+    if (v.length > 1) s += '<text x="' + (x + cw / 2) + '" y="' + (pt + i * ch + ch / 2 + 3) + '" class="tiny" text-anchor="middle">' + v.length + '</text>'; } });
+  var lg = ''; for (var k = 0; k <= 10; k += 2) lg += '<span style="background:' + shade(k) + '"></span>';
+  H.push('<section><h2>the grid</h2><p class="lede">Each column is a day, each row a part of the day. Colour follows the number, from empty on the left of this key to full on the right: <span class="key">' + lg + '</span>. Hollow means no check-in that part of that day. A small count marks more than one.</p>' + s + '</svg></section>');
+ })();
+ // 4 · what goes with what
+ function chipTable(kind, title, lede, colr){
+  var cnt = {}, sum = {}; L.forEach(function(e){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (!w) return; cnt[w] = (cnt[w] || 0) + 1; sum[w] = (sum[w] || 0) + e.e; }); });
+  var ws = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a] || a.localeCompare(b); }).slice(0, 14); if (!ws.length) return;
+  var W = 720, rh = 26, pl = 210, Hh = ws.length * rh + 30, iw = W - pl - 70, mx = cnt[ws[0]];
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="bars">';
+  s += '<line x1="' + (pl + (mean / 10) * iw) + '" x2="' + (pl + (mean / 10) * iw) + '" y1="6" y2="' + (Hh - 20) + '" class="meanline"/><text x="' + (pl + (mean / 10) * iw) + '" y="' + (Hh - 6) + '" class="ax" text-anchor="middle">overall mean ' + mean.toFixed(1) + '</text>';
+  ws.forEach(function(w, i){ var y = 10 + i * rh + rh / 2, m = sum[w] / cnt[w], own = START[kind].indexOf(w) < 0;
+   s += '<text x="' + (pl - 14) + '" y="' + (y + 4) + '" class="lab' + (own ? ' own' : '') + '" text-anchor="end">' + esc(w) + '</text>';
+   s += '<rect x="' + pl + '" y="' + (y - 7) + '" width="' + (cnt[w] / mx * iw * .55).toFixed(1) + '" height="14" rx="7" fill="' + colr + '" opacity=".22"/>';
+   s += '<text x="' + (pl + 8) + '" y="' + (y + 4) + '" class="tiny">' + cnt[w] + '×</text>';
+   s += star(pl + (m / 10) * iw, y, 7, shade(m)) + '<text x="' + (pl + (m / 10) * iw + 11) + '" y="' + (y + 4) + '" class="ax">' + m.toFixed(1) + '</text>'; });
+  H.push('<section><h2>' + title + '</h2><p class="lede">' + lede + ' The bar is how often a word was chosen. The star is the mean number on the check-ins where it was. Words in italics were typed in rather than offered.</p>' + s + '</svg></section>');
+ }
+ chipTable('drain', 'what wore it down', 'Named at check-in, in the moment.', '#8b6fd6');
+ chipTable('add', 'what lifted it', 'Named at check-in, in the moment.', '#21f6bc');
+ chipTable('body', 'what the body asked for', 'Named at check-in, in the moment.', '#ffd36b');
+ // 5 · cycle, only if logged
+ (function(){
+  var cs = L.filter(function(e){ return e.cyc; }); if (!cs.length) return;
+  var rows = allDays.map(function(d){ var c = null, es = days[d] || []; es.forEach(function(e){ if (e.cyc) c = e.cyc; }); var m = es.length ? es.reduce(function(a, e){ return a + e.e; }, 0) / es.length : null; return { d:d, c:c, m:m }; });
+  var W = 720, cw = Math.max(10, Math.min(56, Math.floor((W - 110) / allDays.length))), pl = 96, Hh = 110;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="grid">';
+  s += '<text x="' + (pl - 10) + '" y="30" class="lab" text-anchor="end">flow</text><text x="' + (pl - 10) + '" y="56" class="lab" text-anchor="end">cramps</text><text x="' + (pl - 10) + '" y="86" class="lab" text-anchor="end">energy</text>';
+  rows.forEach(function(r, j){ var x = pl + j * cw, dn = new Date(r.d + 'T12:00:00').getDay();
+   if (cw >= 42 || (cw >= 16 && dn === 1) || (cw < 16 && j % 7 === 0)) s += '<text x="' + (x + cw / 2) + '" y="10" class="ax" text-anchor="middle">' + fmt(r.d) + '</text>';
+   if (r.c && r.c.flow > 0) s += '<rect x="' + (x + 1) + '" y="18" width="' + (cw - 2) + '" height="16" rx="3" fill="#ff6e9c" opacity="' + (.25 + .18 * r.c.flow) + '"><title>' + fmt(r.d) + ' ' + CYC.flow[r.c.flow] + '</title></rect>';
+   if (r.c && r.c.cramp > 0) s += '<rect x="' + (x + 1) + '" y="44" width="' + (cw - 2) + '" height="16" rx="3" fill="#ff6e9c" opacity="' + (.3 + .3 * r.c.cramp) + '"><title>' + fmt(r.d) + ' ' + CYC.cramp[r.c.cramp] + ' cramps</title></rect>';
+   if (r.m !== null) s += star(x + cw / 2, 100 - r.m * 2.4, 5, shade(r.m)); });
+  H.push('<section><h2>cycle</h2><p class="lede">Flow and cramps where they were logged, deeper colour for more, with each day\'s mean number underneath on the same days.</p>' + s + '</svg></section>');
+ })();
+ // 6 · notes
+ (function(){
+  var ns = L.filter(function(e){ return e.note; }); if (!ns.length) return;
+  H.push('<section><h2>notes, verbatim</h2><ul class="notes">' + ns.map(function(e){ return '<li><span class="when">' + fmt(dayOf(e.t)) + ' · ' + e.slot + ' · ' + e.e + '</span><q>' + esc(e.note) + '</q></li>'; }).join('') + '</ul></section>');
+ })();
+ var css = 'body{margin:0;background:#0a0118;color:#f0eaff;font:15px/1.6 "JetBrains Mono",ui-monospace,Menlo,monospace;-webkit-font-smoothing:antialiased}main{max-width:760px;margin:0 auto;padding:40px 20px 80px}h1{font:italic 300 44px/1.1 Fraunces,Georgia,serif;margin:0 0 6px}h2{font:italic 300 26px/1.2 Fraunces,Georgia,serif;margin:0 0 6px}section{margin-top:54px}p.lede,.sub{color:#a49bbd;font-size:13.5px;line-height:1.6;margin:0 0 14px}svg{width:100%;height:auto;display:block;overflow:visible}.rule{stroke:#2a1f4a;stroke-width:1}.ax{fill:#a49bbd;font-size:10.5px}.tiny{fill:#f0eaff;font-size:9.5px;opacity:.8}.lab{fill:#f0eaff;font-size:12px}.lab.own{font-style:italic;fill:#bda6ff}.thread{fill:none;stroke:#bda6ff;stroke-width:1;stroke-dasharray:2 3;opacity:.5}.meanline{stroke:#ffd36b;stroke-width:1;stroke-dasharray:3 4;opacity:.6}.range{stroke:#a49bbd;stroke-width:1;opacity:.5}.empty{fill:none;stroke:#2a1f4a;stroke-width:1}.key span{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 2px;vertical-align:middle}.notes{list-style:none;padding:0;margin:0}.notes li{margin:0 0 18px}.when{display:block;color:#a49bbd;font-size:12px}q{font:italic 300 19px/1.4 Fraunces,Georgia,serif;quotes:none}.sum{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0 0}.sum b{display:block;font:italic 300 38px/1 Fraunces,Georgia,serif;color:#ffd36b}.sum span{color:#a49bbd;font-size:12.5px}footer{margin-top:60px;color:#a49bbd;font-size:12.5px;border-top:1px solid #2a1f4a;padding-top:16px}@media print{body{background:#fff;color:#1a1030}.ax,.lede,.sub,.when,footer,.sum span{fill:#5a4a8a;color:#5a4a8a}.lab,.tiny{fill:#1a1030}.rule,.empty{stroke:#ddd}section{break-inside:avoid}}';
+ var fonts = '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,300&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">';
+ var lowDays = dk.filter(function(d){ return days[d].reduce(function(a, e){ return a + e.e; }, 0) / days[d].length < 4; }).length;
+ var head = '<main><h1>energy, so far</h1><p class="sub">A plain record of how the number moved, built from ' + n + ' check-ins between ' + fmtY(dk[0]) + ' and ' + fmtY(dk[dk.length - 1]) + '. Nothing here is inferred. Only what was logged, counted.</p><div class="sum"><div><b>' + mean.toFixed(1) + '</b><span>mean, 0 to 10</span></div><div><b>' + n + '</b><span>check-ins</span></div><div><b>' + dk.length + '</b><span>days</span></div><div><b>' + lowDays + '</b><span>days under 4</span></div></div>';
+ var foot = '<footer>0 is running on empty, 10 is lit up. Made ' + fmtY(todayStr()) + '.</footer></main>';
+ return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>energy, so far</title>' + fonts + '<style>' + css + '</style></head><body>' + head + H.join('') + foot + '</body></html>';
+}
+function shareReport(){
+ if (!readLog().filter(okEntry).length){ toast('nothing to show yet'); return; }
+ var html = reportHTML(), name = 'energy-' + todayStr() + '.html';
+ try { var f = new File([html], name, { type:'text/html' }); if (navigator.share && navigator.canShare && navigator.canShare({ files:[f] })){ navigator.share({ files:[f], title:'energy, so far' }).catch(function(){}); return; } } catch(_){}
+ var b = new Blob([html], { type:'text/html' }), u = URL.createObjectURL(b), a = document.createElement('a');
+ a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 500);
+}
+document.getElementById('reportBtn').addEventListener('click', shareReport);
+
 // ── save ─────────────────────────────────────────────────────────────
 document.getElementById('save').addEventListener('click', function(){
  if (val === null) return;
@@ -716,7 +820,7 @@ function no404(c){ return 'Cannot see ' + c.repo + '. Check the name, and that t
 
 function paintGH(){
  var c = readGH(), st = document.getElementById('ghState'), n = document.getElementById('ghNote');
- var dot = document.getElementById('syncDot');
+ var dot = document.getElementById('syncDot'); document.getElementById('reportBtn').hidden = !c;
  dot.className = 'sync ' + (!c ? 'off' : c.err ? 'err' : store.get('en-dirty') ? 'wait' : 'on');
  if (!c){ st.textContent = 'not connected'; n.textContent = ''; return; }
  if (c.err){ st.textContent = 'needs attention'; n.textContent = c.err; return; }
