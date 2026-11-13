@@ -221,7 +221,7 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
  <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button></div>
- <div class="row"><button id="quietBtn" type="button">Quiet week</button><button id="soundBtn" type="button">Sound</button></div>
+ <div class="row"><button id="quietBtn" type="button">Quiet week</button></div>
  <div class="st" id="ghNote"></div>
 </details>
 
@@ -772,21 +772,6 @@ function paintQuiet(){ var u = quietUntil(), b = document.getElementById('quietB
 document.getElementById('quietBtn').addEventListener('click', function(){ if (quietUntil()){ store.del('en-quiet'); toast('words are back'); } else { store.set('en-quiet', String(Date.now() + 7 * 864e5)); toast('quiet for a week. just the number.'); } paintQuiet(); });
 paintQuiet();
 
-// ── a soft note per number, on a five-note scale ─────────────────────
-var NOTES = [146.83,174.61,196,220,261.63,293.66,349.23,392,440,523.25,587.33], actx = null;
-function soundOn(){ return store.get('en-sound') !== '0'; }
-function tone(v, vol, at){
- if (!soundOn()) return;
- try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; actx = actx || new AC(); if (actx.state === 'suspended') actx.resume();
-  var t = actx.currentTime + (at || 0), g = actx.createGain(), o = actx.createOscillator(), o2 = actx.createOscillator(), g2 = actx.createGain();
-  o.type = 'sine'; o.frequency.value = NOTES[v]; o2.type = 'triangle'; o2.frequency.value = NOTES[v] * 2; g2.gain.value = .16;
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .015); g.gain.exponentialRampToValueAtTime(.0001, t + 1.4);
-  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(actx.destination); o.start(t); o2.start(t); o.stop(t + 1.5); o2.stop(t + 1.5);
- } catch(_){}
-}
-function paintSound(){ document.getElementById('soundBtn').textContent = soundOn() ? 'Sound on' : 'Sound off'; }
-document.getElementById('soundBtn').addEventListener('click', function(){ store.set('en-sound', soundOn() ? '0' : '1'); paintSound(); tone(7, .09); tone(9, .06, .14); });
-paintSound();
 // the same part of day a week back, else yesterday. silent when there is nothing to say.
 function whisper(d){
  var sl = slotFor(d), log = readLog(), f = function(back){ var x = new Date(d); x.setDate(x.getDate() - back); var ds = localISO(x).slice(0,10), m = log.filter(function(e){ return dayOf(e.t) === ds && slotOf(e) === sl; }); return m.length ? { v:m[m.length-1].e, x:x } : null; };
@@ -803,7 +788,7 @@ document.getElementById('save').addEventListener('click', function(){
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
- var wh = whisper(d); tone(e.e, .1); tone(Math.min(10, e.e + 2), .06, .15);
+ var wh = whisper(d);
  var a = readLog(); a.push(e); writeLog(a);
  field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky();
  var af = document.getElementById('after');
@@ -828,7 +813,7 @@ function resetForm(){
 }
 
 // ── the sky: 28 days across, 24 hours down ───────────────────────────
-var skyOff = 0, skyC = document.getElementById('skyC'), skyPts = [], hl = null, playT0 = 0, playSeen = {}, PLAY_MS = 7500;
+var skyOff = 0, skyC = document.getElementById('skyC'), skyPts = [], hl = null, playT0 = 0, PLAY_MS = 7500;
 var KCOL = { drainChips:'--violet', addChips:'--mint', body:'--gold' };
 function skyDays(){ var end = new Date(); end.setHours(12,0,0,0); end.setDate(end.getDate() + skyOff * 28); var d = []; for (var i = 27; i >= 0; i--){ var x = new Date(end); x.setDate(end.getDate() - i); d.push(localISO(x).slice(0,10)); } return d; }
 function paintSky(now, anim){
@@ -862,7 +847,6 @@ function paintSky(now, anim){
   x.globalAlpha = 1;
   ps.forEach(function(p, k){ var e = p.e, r = 2 + e.e * .3, ph = (+i) * 1.3 + k * 2.1, tw = .7 + .3 * Math.sin(now / 700 + ph), col = shade(e.e);
    var on = hit(e), gr = Math.min(1, (pl - p.rv) / .9); gr = 1 - Math.pow(1 - gr, 3);
-   if (playT0 && !playSeen[e.t]){ playSeen[e.t] = 1; tone(e.e, .05); }
    if (hl && on){ x.globalAlpha = .22 + .2 * tw; x.strokeStyle = hc; x.lineWidth = 1; x.beginPath(); x.arc(p.x, p.y, r + 8 + 1.5 * Math.sin(now / 500 + ph), 0, Math.PI * 2); x.stroke(); x.globalAlpha = 1; }
    dotStar(x, p.x, p.y, (r + 3) * (.3 + .7 * gr) * (hl && on ? 1.2 : 1), now / 9000 + ph, col, tw * gr * (on ? 1 : .16));
    if (!on){ skyPts.push(p); return; }
@@ -878,11 +862,10 @@ function paintSky(now, anim){
  document.getElementById('next').disabled = skyOff >= 0;
  if (!anim) paintInsight(log);
 }
-function playStop(){ playT0 = 0; playSeen = {}; document.getElementById('skyPlay').textContent = '▸ play the month'; }
+function playStop(){ playT0 = 0; document.getElementById('skyPlay').textContent = '▸ play the month'; }
 document.getElementById('skyPlay').addEventListener('click', function(){
  if (playT0){ playStop(); paintSky(); return; }
- if (soundOn()) try { var AC = window.AudioContext || window.webkitAudioContext; if (AC){ actx = actx || new AC(); if (actx.state === 'suspended') actx.resume(); } } catch(_){}
- document.getElementById('note').classList.remove('show'); playSeen = {}; playT0 = performance.now(); this.textContent = '■ stop'; skyOn = true; skyGo();
+ document.getElementById('note').classList.remove('show'); playT0 = performance.now(); this.textContent = '■ stop'; skyOn = true; skyGo();
 });
 function paintHL(scroll){
  var b = document.getElementById('hlBar'), box = document.getElementById('insight');
