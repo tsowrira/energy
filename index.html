@@ -123,6 +123,15 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .insight .wr .tal i{ flex:none; width:5.5px; height:5.5px; border-radius:50%; background:var(--c); animation:insPt .6s ease-out both; animation-delay:calc(var(--i) * 45ms); } .insight .wr .tal em{ font-style:normal; color:var(--mute); font-size:11px; }
 .insight .wr .at{ font-size:12px; color:var(--mute); white-space:nowrap; } .insight .wr .at b{ font-weight:400; }
 .insight .foot{ color:var(--mute); font-size:12px; line-height:1.6; margin:22px 0 0; }
+.insight [data-w]{ cursor:pointer; -webkit-tap-highlight-color:transparent; transition:opacity .3s; } .insight.has [data-w]:not(.on){ opacity:.4; }
+.insight .wr{ border-radius:6px; margin:0 -6px; padding-left:6px; padding-right:6px; } .insight .wr.on{ background:rgba(189,166,255,.08); }
+.insight .pls{ display:flex; flex-wrap:wrap; gap:6px; } .insight .pl{ border:1px solid var(--c); border-radius:999px; padding:3px 10px; font-size:13px; background:none; color:var(--ink); font-family:inherit; } .insight .pl em{ font-style:normal; color:var(--mute); font-size:11px; margin-left:4px; } .insight .pl.on{ background:rgba(189,166,255,.14); }
+.insight h4 small{ font-size:11px; letter-spacing:0; opacity:.8; white-space:nowrap; }
+.skyBar{ display:flex; justify-content:space-between; align-items:center; gap:10px; min-height:34px; margin-top:4px; }
+.skyBar button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:13px; padding:8px 0; cursor:pointer; } #hlBar{ border:1px solid var(--c, var(--line)); border-radius:999px; padding:4px 12px; color:var(--ink); } #hlBar i{ font-style:normal; color:var(--mute); margin-left:8px; } #skyPlay{ margin-left:auto; }
+.ribbon{ margin-top:22px; } .ribbon p{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:0 0 8px; } .ribbon svg{ display:block; width:100%; height:auto; overflow:visible; cursor:pointer; } .ribbon text{ font-family:var(--mono); font-size:8.5px; fill:var(--mute); }
+.after .wh{ display:block; font:italic 300 16px/1.4 var(--serif); color:var(--mute); margin-top:4px; animation:whIn 1.2s ease both .3s; } @keyframes whIn{ from{ opacity:0; transform:translateY(4px); } }
+.note a.card{ display:inline-block; margin-top:10px; color:var(--orchid); font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 @keyframes insPt{ from{ opacity:0; transform:scale(.2); } } @keyframes insMn{ from{ opacity:0; transform:translateY(8px) scale(.4) rotate(-40deg); } }
 @media (prefers-reduced-motion:reduce){ .insight .pt, .insight .mn, .insight .wr .tal i{ animation:none; } }
 
@@ -195,9 +204,11 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <p class="k">the sky</p>
  <div class="nav"><button id="prev">‹ earlier</button><div class="ttl" id="skyTtl"></div><button id="next" disabled>later ›</button></div>
  <canvas id="skyC"></canvas>
+ <div class="skyBar"><button id="hlBar" type="button" hidden></button><button id="skyPlay" type="button">▸ play the month</button></div>
  <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, as many or as few as you like. each day its own small constellation.</p>
  <div class="note" id="note"></div>
  <p class="glance" id="glance"></p>
+ <div class="ribbon" id="ribbon"></div>
  <details class="fold" id="insFold"><summary>patterns</summary><div class="insight" id="insight"></div></details>
 </div>
 
@@ -209,7 +220,8 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <label>token<input id="ghTok" type="password" name="password" autocomplete="current-password" placeholder="github_pat_…"></label>
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
- <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button><button id="quietBtn" type="button">Quiet week</button></div>
+ <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button></div>
+ <div class="row"><button id="quietBtn" type="button">Quiet week</button><button id="soundBtn" type="button">Sound</button></div>
  <div class="st" id="ghNote"></div>
 </details>
 
@@ -760,6 +772,29 @@ function paintQuiet(){ var u = quietUntil(), b = document.getElementById('quietB
 document.getElementById('quietBtn').addEventListener('click', function(){ if (quietUntil()){ store.del('en-quiet'); toast('words are back'); } else { store.set('en-quiet', String(Date.now() + 7 * 864e5)); toast('quiet for a week. just the number.'); } paintQuiet(); });
 paintQuiet();
 
+// ── a soft note per number, on a five-note scale ─────────────────────
+var NOTES = [146.83,174.61,196,220,261.63,293.66,349.23,392,440,523.25,587.33], actx = null;
+function soundOn(){ return store.get('en-sound') !== '0'; }
+function tone(v, vol, at){
+ if (!soundOn()) return;
+ try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; actx = actx || new AC(); if (actx.state === 'suspended') actx.resume();
+  var t = actx.currentTime + (at || 0), g = actx.createGain(), o = actx.createOscillator(), o2 = actx.createOscillator(), g2 = actx.createGain();
+  o.type = 'sine'; o.frequency.value = NOTES[v]; o2.type = 'triangle'; o2.frequency.value = NOTES[v] * 2; g2.gain.value = .16;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .015); g.gain.exponentialRampToValueAtTime(.0001, t + 1.4);
+  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(actx.destination); o.start(t); o2.start(t); o.stop(t + 1.5); o2.stop(t + 1.5);
+ } catch(_){}
+}
+function paintSound(){ document.getElementById('soundBtn').textContent = soundOn() ? 'Sound on' : 'Sound off'; }
+document.getElementById('soundBtn').addEventListener('click', function(){ store.set('en-sound', soundOn() ? '0' : '1'); paintSound(); tone(7, .09); tone(9, .06, .14); });
+paintSound();
+// the same part of day a week back, else yesterday. silent when there is nothing to say.
+function whisper(d){
+ var sl = slotFor(d), log = readLog(), f = function(back){ var x = new Date(d); x.setDate(x.getDate() - back); var ds = localISO(x).slice(0,10), m = log.filter(function(e){ return dayOf(e.t) === ds && slotOf(e) === sl; }); return m.length ? { v:m[m.length-1].e, x:x } : null; };
+ var w = f(7), y = f(1), nm = SLOTS[sl];
+ if (w) return 'last ' + w.x.toLocaleDateString(undefined, { weekday:'long' }).toLowerCase() + ' ' + nm + ' you were at ' + w.v + '.';
+ if (y) return (sl === 0 ? 'last night' : 'yesterday ' + nm) + ' you were at ' + y.v + '.';
+ return '';
+}
 // ── save ─────────────────────────────────────────────────────────────
 document.getElementById('save').addEventListener('click', function(){
  if (val === null) return;
@@ -768,12 +803,14 @@ document.getElementById('save').addEventListener('click', function(){
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
+ var wh = whisper(d); tone(e.e, .1); tone(Math.min(10, e.e + 2), .06, .15);
  var a = readLog(); a.push(e); writeLog(a);
  field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky();
  var af = document.getElementById('after');
  if (bc.indexOf('a long breath') >= 0) af.innerHTML = 'saved.<a id="afBreath">breathe?</a>';
  else if (bc.indexOf('slow down') >= 0) af.innerHTML = 'saved.<a id="afStill">a minute of nothing?</a>';
  else af.textContent = 'saved.';
+ if (wh){ var ws = document.createElement('span'); ws.className = 'wh'; ws.textContent = wh; af.appendChild(ws); }
  var ab = document.getElementById('afBreath'), as = document.getElementById('afStill');
  if (ab) ab.addEventListener('click', function(){ breath.start('breath'); }); if (as) as.addEventListener('click', function(){ breath.start('still'); });
  markDirty(); ghPush(1);
@@ -791,7 +828,8 @@ function resetForm(){
 }
 
 // ── the sky: 28 days across, 24 hours down ───────────────────────────
-var skyOff = 0, skyC = document.getElementById('skyC'), skyPts = [];
+var skyOff = 0, skyC = document.getElementById('skyC'), skyPts = [], hl = null, playT0 = 0, playSeen = {}, PLAY_MS = 7500;
+var KCOL = { drainChips:'--violet', addChips:'--mint', body:'--gold' };
 function skyDays(){ var end = new Date(); end.setHours(12,0,0,0); end.setDate(end.getDate() + skyOff * 28); var d = []; for (var i = 27; i >= 0; i--){ var x = new Date(end); x.setDate(end.getDate() - i); d.push(localISO(x).slice(0,10)); } return d; }
 function paintSky(now, anim){
  now = now || performance.now();
@@ -808,27 +846,53 @@ function paintSky(now, anim){
  days.forEach(function(ds, i){ var d = new Date(ds + 'T12:00:00'), dow = (d.getDay() + 6) % 7; if (ds === tod){ x.fillStyle = css('--ink'); x.fillText('MTWTFSS'[dow], X(i), B + 12); } else if (dow === 0){ x.fillStyle = 'rgba(189,166,255,.35)'; x.fillRect(Math.round(X(i)) - .5, B + 6, 1, 6); } });
  // the points; a thin tick at the top of a day marks flow
  var log = readLog(), by = {}; skyPts = [];
+ var pl = 99;
+ if (playT0){ var fi = 27; log.forEach(function(e){ var i = days.indexOf(dayOf(e.t)); if (i >= 0 && i < fi) fi = i; }); var span = 30.5 - fi; pl = fi - 1 + (now - playT0) / (PLAY_MS * Math.max(.45, span / 30)) * span; if (pl > 30){ playStop(); pl = 99; } }
+ var hit = function(e){ return !hl || (e[hl.k] || []).indexOf(hl.w) >= 0; }, hc = hl ? css(KCOL[hl.k]) : '';
+ if (playT0 && pl < 28.5){ x.fillStyle = 'rgba(189,166,255,.10)'; x.fillRect(L + cw * Math.max(0, pl - .5), T, 1, B - T); }
  log.forEach(function(e){ var i = days.indexOf(dayOf(e.t)); if (i >= 0 && e.cyc && e.cyc.flow >= 1){ x.fillStyle = e.cyc.flow >= 2 ? css('--rose') : 'rgba(255,110,156,.45)'; x.fillRect(Math.round(X(i)) - 2, T - 6, 5, 2); } });
  log.forEach(function(e){ var i = days.indexOf(dayOf(e.t)); if (i >= 0) (by[i] = by[i] || []).push(e); });
  Object.keys(by).forEach(function(i){
-  var es = by[i], ps = es.map(function(e){ return { x:X(+i), y:Y(hourOf(e.t)), e:e }; });
+  var es = by[i], ps = es.map(function(e){ var h = hourOf(e.t); return { x:X(+i), y:Y(h), e:e, rv:+i + h / 24 }; }).filter(function(p){ return p.rv <= pl; });
+  if (!ps.length) return;
   var isT = days[+i] === tod;
+  x.globalAlpha = hl ? .3 : 1;
   if (ps.length > 1){ x.strokeStyle = isT ? 'rgba(189,166,255,.85)' : 'rgba(139,111,214,.55)'; x.lineWidth = isT ? 1.5 : 1; x.beginPath(); ps.forEach(function(p, k){ k ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y); }); x.stroke(); }
   if (isT){ var lp = ps[ps.length - 1], nn = new Date(), nhh = nn.getHours() + nn.getMinutes() / 60; if (Y(nhh) > lp.y + 8){ x.save(); x.setLineDash([2, 4]); x.strokeStyle = 'rgba(189,166,255,.45)'; x.lineWidth = 1; x.beginPath(); x.moveTo(lp.x, lp.y); x.lineTo(lp.x, Y(nhh) - 5); x.stroke(); x.restore(); } }
+  x.globalAlpha = 1;
   ps.forEach(function(p, k){ var e = p.e, r = 2 + e.e * .3, ph = (+i) * 1.3 + k * 2.1, tw = .7 + .3 * Math.sin(now / 700 + ph), col = shade(e.e);
-   dotStar(x, p.x, p.y, r + 3, now / 9000 + ph, col, tw);
+   var on = hit(e), gr = Math.min(1, (pl - p.rv) / .9); gr = 1 - Math.pow(1 - gr, 3);
+   if (playT0 && !playSeen[e.t]){ playSeen[e.t] = 1; tone(e.e, .05); }
+   if (hl && on){ x.globalAlpha = .22 + .2 * tw; x.strokeStyle = hc; x.lineWidth = 1; x.beginPath(); x.arc(p.x, p.y, r + 8 + 1.5 * Math.sin(now / 500 + ph), 0, Math.PI * 2); x.stroke(); x.globalAlpha = 1; }
+   dotStar(x, p.x, p.y, (r + 3) * (.3 + .7 * gr) * (hl && on ? 1.2 : 1), now / 9000 + ph, col, tw * gr * (on ? 1 : .16));
+   if (!on){ skyPts.push(p); return; }
    var n = Math.min(5, (e.drainChips || []).length + (e.addChips || []).length + (e.body || []).length);
-   for (var q = 0; q < n; q++){ var a = now / 2600 * (1 + q * .13) + ph + q * 2.1, rr = r + 3 + (q % 3) * 1.6; x.globalAlpha = .3 + .4 * tw; x.fillRect(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * .6, 1.2, 1.2); }
+   for (var q = 0; q < n; q++){ var a = now / 2600 * (1 + q * .13) + ph + q * 2.1, rr = r + 3 + (q % 3) * 1.6; x.globalAlpha = (.3 + .4 * tw) * gr; x.fillRect(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * .6, 1.2, 1.2); }
    x.globalAlpha = 1; skyPts.push(p); });
  });
  // now
  var ti = days.indexOf(tod);
  if (ti >= 0){ var n = new Date(), nh = n.getHours() + n.getMinutes() / 60; x.strokeStyle = val === null ? 'rgba(189,166,255,.6)' : css('--a'); x.lineWidth = 1.5; x.beginPath(); x.arc(X(ti), Y(nh), 5, 0, Math.PI * 2); x.stroke(); }
- var f = { month:'short', day:'numeric' }, d0 = new Date(days[0] + 'T12:00:00'), d1 = new Date(days[27] + 'T12:00:00');
+ var f = { month:'short', day:'numeric' }; if (new Date(days[27] + 'T12:00:00').getFullYear() !== new Date().getFullYear()) f.year = 'numeric'; var d0 = new Date(days[0] + 'T12:00:00'), d1 = new Date(days[27] + 'T12:00:00');
  document.getElementById('skyTtl').textContent = skyOff === 0 ? 'the last four weeks' : d0.toLocaleDateString(undefined, f).toLowerCase() + ' – ' + d1.toLocaleDateString(undefined, f).toLowerCase();
  document.getElementById('next').disabled = skyOff >= 0;
  if (!anim) paintInsight(log);
 }
+function playStop(){ playT0 = 0; playSeen = {}; document.getElementById('skyPlay').textContent = '▸ play the month'; }
+document.getElementById('skyPlay').addEventListener('click', function(){
+ if (playT0){ playStop(); paintSky(); return; }
+ if (soundOn()) try { var AC = window.AudioContext || window.webkitAudioContext; if (AC){ actx = actx || new AC(); if (actx.state === 'suspended') actx.resume(); } } catch(_){}
+ document.getElementById('note').classList.remove('show'); playSeen = {}; playT0 = performance.now(); this.textContent = '■ stop'; skyOn = true; skyGo();
+});
+function paintHL(scroll){
+ var b = document.getElementById('hlBar'), box = document.getElementById('insight');
+ box.classList.toggle('has', !!hl);
+ box.querySelectorAll('[data-w]').forEach(function(el){ el.classList.toggle('on', !!hl && el.dataset.k === hl.k && el.dataset.w === hl.w); });
+ b.hidden = !hl; if (hl){ b.style.setProperty('--c', css(KCOL[hl.k])); b.innerHTML = esc(hl.w) + '<i>clear ×</i>'; }
+ paintSky(undefined, true); skyGo();
+ if (hl && scroll) document.querySelector('.sky').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+document.getElementById('hlBar').addEventListener('click', function(){ hl = null; paintHL(); });
 var skyRaf = 0, skyOn = false;
 function skyFrame(now){ skyRaf = 0; if (!skyOn || document.hidden) return; paintSky(now, true); skyRaf = requestAnimationFrame(function(t){ skyRaf = requestAnimationFrame(skyFrame); }); }
 function skyGo(){ if (!skyRaf && skyOn && !document.hidden) skyRaf = requestAnimationFrame(skyFrame); }
@@ -848,7 +912,54 @@ function showNote(e){
  if (e.body) p.push('<b>body wanted</b><br>' + pills(e.body));
  if (e.cyc){ var cp = []; if (e.cyc.flow) cp.push(CYC.flow[e.cyc.flow]); if (e.cyc.cramp) cp.push(CYC.cramp[e.cyc.cramp] + ' cramps'); if (e.cyc.sx) cp = cp.concat(e.cyc.sx); if (cp.length) p.push('<b>cycle</b><br>' + pills(cp)); }
  if (e.note) p.push('<i>' + esc(e.note) + '</i>');
- document.getElementById('note').innerHTML = p.join('<br>');
+ document.getElementById('note').innerHTML = p.join('<br>') + '<br><a class="card" id="cardLn">keep this day as an image</a>';
+ document.getElementById('cardLn').addEventListener('click', function(){ dayCard(dayOf(e.t)); });
+}
+function dayCard(ds){
+ var es = readLog().filter(function(e){ return dayOf(e.t) === ds; }); if (!es.length) return;
+ var W = 360, H = 460, S = 3, c = document.createElement('canvas'); c.width = W * S; c.height = H * S; var x = c.getContext('2d'); x.scale(S, S);
+ var mono = css('--mono'), serif = css('--serif'), mean = es.reduce(function(a, e){ return a + e.e; }, 0) / es.length, d = new Date(ds + 'T12:00:00');
+ x.fillStyle = '#0a0118'; x.fillRect(0, 0, W, H);
+ var g = x.createRadialGradient(W / 2, 200, 10, W / 2, 200, 260); g.addColorStop(0, shade(mean) + '2e'); g.addColorStop(1, shade(mean) + '00'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+ var sd = 7; for (var q = 0; q < ds.length; q++) sd = (sd * 31 + ds.charCodeAt(q)) >>> 0; var rnd = function(){ sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+ for (q = 0; q < 170; q++){ var k = rnd(); x.globalAlpha = .08 + .4 * k * k; x.fillStyle = k > .8 ? '#f0eaff' : '#bda6ff'; var z = k > .93 ? 1.6 : 1; x.fillRect(rnd() * W, rnd() * H, z, z); }
+ for (q = 0; q < 5; q++) dotStar(x, 20 + rnd() * (W - 40), 20 + rnd() * (H - 40), 3 + rnd() * 2, rnd() * 6, '#bda6ff', .28);
+ x.globalAlpha = 1; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+ x.fillStyle = '#f0eaff'; x.font = 'italic 300 34px ' + serif; x.fillText(d.toLocaleDateString(undefined, { weekday:'long' }).toLowerCase(), 28, 62);
+ x.fillStyle = '#a49bbd'; x.font = '11.5px ' + mono; x.fillText(d.toLocaleDateString(undefined, { month:'long', day:'numeric' }).toLowerCase() + '  ·  ' + es.length + (es.length > 1 ? ' check-ins' : ' check-in'), 28, 84);
+ var L = 44, R = W - 28, T = 126, B = 286, X = function(h){ return L + (R - L) * h / 24; }, Y = function(v){ return B - (B - T) * v / 10; };
+ x.font = '9.5px ' + mono; x.textAlign = 'right'; x.setLineDash([1, 5]); x.lineCap = 'round'; x.strokeStyle = 'rgba(189,166,255,.2)'; x.lineWidth = 1;
+ [0, 5, 10].forEach(function(v){ x.beginPath(); x.moveTo(L, Y(v)); x.lineTo(R, Y(v)); x.stroke(); x.fillText(v, L - 10, Y(v) + 3); });
+ x.setLineDash([]); x.textAlign = 'center'; [0, 6, 12, 18, 24].forEach(function(h){ x.fillText(pad(h % 24), X(h), B + 20); });
+ var ps = es.map(function(e){ return { x:X(hourOf(e.t)), y:Y(e.e), e:e }; });
+ if (ps.length > 1){ x.strokeStyle = 'rgba(189,166,255,.6)'; x.lineWidth = 1; x.setLineDash([2, 4]); x.beginPath(); ps.forEach(function(p, i){ i ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y); }); x.stroke(); x.setLineDash([]); }
+ ps.forEach(function(p, i){ x.fillStyle = '#0a0118'; x.beginPath(); x.arc(p.x, p.y, 9, 0, 7); x.fill(); dotStar(x, p.x, p.y, 8 + p.e.e * .35, i * .7, shade(p.e.e), 1); x.fillStyle = '#f0eaff'; x.font = '11px ' + mono; x.fillText(p.e.e, p.x, p.y - 17); });
+ var yy = 334; x.textAlign = 'left'; x.font = '12px ' + mono;
+ [['drainChips', '#8b6fd6'], ['addChips', '#21f6bc'], ['body', '#ffd36b']].forEach(function(kc){
+  var seen = {}, ws = []; es.forEach(function(e){ (e[kc[0]] || []).forEach(function(w){ if (!seen[w]){ seen[w] = 1; ws.push(w); } }); }); if (!ws.length || yy > H - 30) return;
+  var xx = 28; ws.forEach(function(w){ var tw = x.measureText(w).width + 20; if (xx + tw > W - 20){ xx = 28; yy += 24; } if (yy > H - 30) return;
+   x.strokeStyle = kc[1]; x.globalAlpha = .75; x.lineWidth = 1; x.beginPath(); if (x.roundRect) x.roundRect(xx, yy - 14, tw - 6, 20, 10); else x.rect(xx, yy - 14, tw - 6, 20); x.stroke(); x.globalAlpha = 1; x.fillStyle = '#f0eaff'; x.fillText(w, xx + 7, yy); xx += tw; });
+  yy += 28; });
+ var name = 'day-' + ds + '.png';
+ c.toBlob(function(b){ if (!b) return;
+  try { var f = new File([b], name, { type:'image/png' }); if (navigator.share && navigator.canShare && navigator.canShare({ files:[f] })){ navigator.share({ files:[f] }).catch(function(){}); return; } } catch(_){}
+  var u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 500);
+ }, 'image/png');
+}
+// one small point per day, up to a year; tap a week to jump the sky there
+function paintRibbon(log){
+ var box = document.getElementById('ribbon'); if (!log.length){ box.innerHTML = ''; return; }
+ var m = {}; log.forEach(function(e){ (m[dayOf(e.t)] = m[dayOf(e.t)] || []).push(e.e); });
+ var end = new Date(); end.setHours(12, 0, 0, 0); var dow = (end.getDay() + 6) % 7, wk = Math.ceil((end - new Date(log[0].t)) / 6048e5) + 2, N = Math.max(28, Math.min(53, wk)), cell = 340 / N, tod = todayStr(), g = '', lastM = -1, R = Math.min(4, cell * .36).toFixed(1);
+ for (var c = 0; c < N; c++) for (var r = 0; r < 7; r++){
+  var back = (N - 1 - c) * 7 + dow - r; if (back < 0) break;
+  var d = new Date(end); d.setDate(end.getDate() - back); var ds = localISO(d).slice(0, 10), cx = ((c + .5) * cell).toFixed(1), cy = (4 + r * cell).toFixed(1), a = m[ds];
+  if (r === 0 && d.getMonth() !== lastM && d.getDate() <= 7 && c < N - 1){ lastM = d.getMonth(); g += '<text x="' + (c * cell).toFixed(1) + '" y="' + (7 * cell + 12).toFixed(1) + '">' + d.toLocaleDateString(undefined, { month:'short' }).toLowerCase() + '</text>'; }
+  if (a) g += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="' + shade(a.reduce(function(p, q){ return p + q; }, 0) / a.length) + '"/>'; else g += '<circle cx="' + cx + '" cy="' + cy + '" r=".7" fill="rgba(189,166,255,.26)"/>';
+  if (ds === tod) g += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (+R + 1.6) + '" fill="none" stroke="#f0eaff" stroke-width=".7" opacity=".8"/>';
+ }
+ box.innerHTML = '<p>day by day</p><svg id="ribS" viewBox="0 0 340 ' + (7 * cell + 16).toFixed(0) + '" role="img" aria-label="one point per day">' + g + '</svg>';
+ document.getElementById('ribS').addEventListener('click', function(ev){ var rc = this.getBoundingClientRect(), c = Math.max(0, Math.min(N - 1, Math.floor((ev.clientX - rc.left) / rc.width * N))), back = Math.max(0, (N - 1 - c) * 7 + dow - 3); skyOff = -Math.floor(back / 28); document.getElementById('note').classList.remove('show'); paintSky(); });
 }
 // Only plain counts and means over the last 28 days. Nothing here claims a cause.
 function paintGlance(log){
@@ -862,7 +973,7 @@ function paintGlance(log){
 function paintInsight(log){
  var box = document.getElementById('insight'), cut = new Date(); cut.setDate(cut.getDate() - 28);
  var rec = log.filter(function(e){ return new Date(e.t) >= cut; });
- paintGlance(log);
+ paintGlance(log); paintRibbon(log);
  if (rec.length < 8){ box.innerHTML = rec.length ? 'the sky fills in as you go.' : ''; return; }
  var by = SLOTS.map(function(){ return []; }); rec.forEach(function(e){ by[SLOTS.indexOf(slotName(e))].push(e.e); });
  var mean = function(a){ return a.reduce(function(x, y){ return x + y; }, 0) / a.length; };
@@ -885,12 +996,20 @@ function paintInsight(log){
   var top = Object.keys(c).sort(function(a, b){ return c[b].length - c[a].length; }).slice(0, 4); if (!top.length || c[top[0]].length < 2) return;
   var r = '<h4 style="--c:' + col + '">' + title + '</h4>';
   top.forEach(function(w){ var n = c[w].length, m = mean(c[w]), d = ''; for (var j = 0; j < Math.min(n, 12); j++) d += '<i style="--i:' + j + '"></i>';
-   r += '<div class="wr" style="--c:' + col + '"><span class="w">' + esc(w) + '</span><span class="tal">' + d + (n > 12 ? '<em>+' + (n - 12) + '</em>' : '') + '</span><span class="at">' + n + '× · <b style="color:' + shade(m) + '">' + m.toFixed(1) + '</b></span></div>'; });
+   r += '<div class="wr" role="button" tabindex="0" data-k="' + key + '" data-w="' + esc(w) + '" style="--c:' + col + '"><span class="w">' + esc(w) + '</span><span class="tal">' + d + (n > 12 ? '<em>+' + (n - 12) + '</em>' : '') + '</span><span class="at">' + n + '× · <b style="color:' + shade(m) + '">' + m.toFixed(1) + '</b></span></div>'; });
   H.push(r);
  };
  words('drainChips', 'wore it down', css('--violet')); words('addChips', 'lifted it', css('--mint')); words('body', 'the body asked for', css('--gold'));
- H.push('<p class="foot">last four weeks · ' + rec.length + ' check-ins. every dot is one. the number beside a word is the average energy when it was picked. counts only, no causes.</p>');
+ var up = {}, dn = {}, nu = 0, nd = 0;
+ for (var q = 1; q < rec.length; q++){ var a0 = rec[q-1], a1 = rec[q]; if ((new Date(a1.t) - new Date(a0.t)) / 36e5 > 24) continue;
+  if (a1.e - a0.e >= 2){ nu++; (a1.addChips || []).forEach(function(w){ up[w] = (up[w] || 0) + 1; }); } else if (a0.e - a1.e >= 2){ nd++; (a1.drainChips || []).forEach(function(w){ dn[w] = (dn[w] || 0) + 1; }); } }
+ var turns = function(c, n, title, col, key){ var top = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; }).slice(0, 5); if (n < 2 || !top.length || c[top[0]] < 2) return;
+  H.push('<h4 style="--c:' + col + '">' + title + ' <small>· ' + n + ' jumps of two or more</small></h4><div class="pls">' + top.map(function(w){ return '<button type="button" class="pl" data-k="' + key + '" data-w="' + esc(w) + '" style="--c:' + col + '">' + esc(w) + '<em>' + c[w] + '</em></button>'; }).join('') + '</div>'); };
+ turns(up, nu, 'on the way up', css('--mint'), 'addChips'); turns(dn, nd, 'on the way down', css('--violet'), 'drainChips');
+ H.push('<p class="foot">last four weeks · ' + rec.length + ' check-ins. every dot is one. the number beside a word is the average energy when it was picked. tap a word to light it in the sky. counts only, no causes.</p>');
  box.innerHTML = H.join('');
+ box.querySelectorAll('[data-w]').forEach(function(el){ el.addEventListener('click', function(){ var k = el.dataset.k, w = el.dataset.w; hl = (hl && hl.k === k && hl.w === w) ? null : { k:k, w:w }; paintHL(true); }); });
+ box.classList.toggle('has', !!hl); if (hl) box.querySelectorAll('[data-w]').forEach(function(el){ el.classList.toggle('on', el.dataset.k === hl.k && el.dataset.w === hl.w); });
 }
 document.getElementById('prev').addEventListener('click', function(){ skyOff--; paintSky(); });
 document.getElementById('next').addEventListener('click', function(){ skyOff++; paintSky(); });
