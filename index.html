@@ -32,6 +32,7 @@ canvas{ display:block; }
 h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em; }
 .today{ display:block; height:30px; margin-top:6px; width:260px; }
 .sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; --sc:var(--mute); opacity:.5; }
+.sync svg.ring{ position:absolute; inset:0; width:34px; height:34px; animation:none; transform:rotate(-90deg); color:inherit; } .sync svg.ring circle{ fill:none; stroke-width:1; } #ringBg{ stroke:var(--line2); } #ringFg{ stroke:var(--sc); stroke-dasharray:94.2; stroke-dashoffset:94.2; transition:stroke-dashoffset .9s ease; stroke-linecap:round; }
 .sync svg{ position:absolute; left:8px; top:8px; width:18px; height:18px; color:var(--sc); animation:spin 14s linear infinite, twinkle 3.2s ease-in-out infinite; }
 .sync.on{ --sc:var(--mint); opacity:1; } .sync.wait{ --sc:var(--gold); opacity:1; } .sync.wait svg{ animation-duration:2s, .9s; } .sync.err{ --sc:var(--rose); opacity:1; }
 .sync i{ position:absolute; left:50%; top:50%; width:2px; height:2px; background:var(--sc); margin:-1px; animation:orbit 5s linear infinite; opacity:.8; } .sync i+i{ animation-delay:-2.5s; animation-duration:7s; }
@@ -112,6 +113,8 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .insight{ margin-top:18px; font-size:15px; line-height:1.65; color:var(--ink); }
 .insight b{ font-weight:500; color:var(--mint); }
 
+html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ margin-top:22px; border-top:1px solid var(--line2); }
+.glance{ color:var(--mute); font-size:12.5px; line-height:1.7; margin:10px 0 0; min-height:0; } .glance b{ color:var(--ink); font-weight:400; }
 .gh{ margin-top:52px; border-top:1px solid var(--line); padding-top:14px; font-size:15px; }
 .gh summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:8px 0; }
 .gh summary::-webkit-details-marker{ display:none; }
@@ -131,7 +134,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 
 <div class="top">
  <div><div class="when" id="when">—</div><h1 id="slot">energy</h1><canvas class="today" id="todayStrip" width="1" height="1" aria-label="check-ins today"></canvas></div>
- <div class="sync" id="syncDot"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg><i></i><i></i></div>
+ <div class="sync" id="syncDot"><svg class="ring" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" id="ringBg"/><circle cx="17" cy="17" r="15" id="ringFg"/></svg><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg><i></i><i></i></div>
 </div>
 
 <p class="q">how much energy is in you right now?</p>
@@ -181,6 +184,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <canvas id="skyC"></canvas>
  <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, as many or as few as you like. each day its own small constellation.</p>
  <div class="note" id="note"></div>
+ <p class="glance" id="glance"></p>
  <details class="fold" id="insFold"><summary>patterns</summary><div class="insight" id="insight"></div></details>
 </div>
 
@@ -192,7 +196,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
  <label>token<input id="ghTok" type="password" name="password" autocomplete="current-password" placeholder="github_pat_…"></label>
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
- <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button></div>
+ <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button><button id="quietBtn" type="button">Quiet week</button></div>
  <div class="st" id="ghNote"></div>
 </details>
 
@@ -224,12 +228,15 @@ function dotStar(x, cx, cy, r, rot, col, alpha){
 }
 
 // Slot comes from the clock, never from a picker. Windows sit late on purpose.
-var SLOTS = ['morning','midday','afternoon','evening'];
+var SLOTS = ['night','morning','midday','afternoon','evening'];
 var LOG_REPO = 'energyLog';
 var STAR_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg>';
-var SLOT_Q = ['this morning', 'since midday', 'this afternoon', 'this evening'];
-var SLOT_H = [12, 15, 20];
-function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 12 ? 0 : h < 15 ? 1 : h < 20 ? 2 : 3; }
+var SLOT_Q = ['tonight', 'this morning', 'since midday', 'this afternoon', 'this evening'];
+var SLOT_H = [5, 12, 15, 20];
+function slotFor(d){ var h = d.getHours() + d.getMinutes()/60; return h < 5 ? 0 : h < 12 ? 1 : h < 15 ? 2 : h < 20 ? 3 : 4; }
+// the part of day always comes from the clock time, so old entries follow the current cut-offs
+function slotOf(e){ return slotFor(new Date(e.t)); }
+function slotName(e){ return SLOTS[slotOf(e)]; }
 
 // Six flat steps, each a meaning: night-violet at rest, ice in the middle, mint is good, gold then amber is lit.
 var STOPS = ['#6b55b3','#8b6fd6','#86cbfe','#21f6bc','#ffd36b','#f5a623'];
@@ -293,6 +300,8 @@ function paintHead(){
  // one dot per check-in so far today, in its colour; none until the first
  var tod = readLog().filter(function(e){ return dayOf(e.t) === todayStr(); });
  strip.set(tod);
+ var seen = {}, lg = readLog(); for (var i = 0; i < 7; i++){ var dd = new Date(); dd.setDate(dd.getDate() - i); seen[localISO(dd).slice(0, 10)] = 0; } lg.forEach(function(e){ if (dayOf(e.t) in seen) seen[dayOf(e.t)] = 1; }); var k7 = Object.keys(seen).reduce(function(a, d){ return a + seen[d]; }, 0);
+ document.getElementById('ringFg').style.strokeDashoffset = (94.2 * (1 - k7 / 7)).toFixed(1); document.getElementById('syncDot').title = k7 + ' of the last 7 days';
 }
 var strip = (function(){
  var c = document.getElementById('todayStrip'), x = c.getContext('2d'), list = [], raf = 0, W = 260, H = 30;
@@ -611,8 +620,8 @@ function reportHTML(){
  })();
  // 2 · the shape of a day
  (function(){
-  var by = [[], [], [], []]; L.forEach(function(e){ var i = SLOTS.indexOf(e.slot); if (i < 0) i = slotFor(new Date(e.t)); by[i].push(e.e); });
-  var W = 720, rowH = 44, Hh = rowH * 4 + 30, pl = 120, pr = 24, iw = W - pl - pr;
+  var by = SLOTS.map(function(){ return []; }); L.forEach(function(e){ by[slotOf(e)].push(e.e); });
+  var W = 720, rowH = 44, Hh = rowH * SLOTS.length + 30, pl = 120, pr = 24, iw = W - pl - pr;
   function X(v){ return pl + v / 10 * iw; }
   var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="rows">';
   [0, 2, 4, 6, 8, 10].forEach(function(v){ s += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="10" y2="' + (Hh - 20) + '" class="rule"/><text x="' + X(v) + '" y="' + (Hh - 4) + '" class="ax" text-anchor="middle">' + v + '</text>'; });
@@ -626,12 +635,12 @@ function reportHTML(){
  })();
  // 3 · the grid: days across, parts of day down
  (function(){
-  var W = 720, cw = Math.max(10, Math.min(56, Math.floor((W - 110) / Math.max(1, allDays.length)))), ch = Math.min(26, cw), pl = 96, pt = 24, Hh = pt + ch * 4 + 30;
+  var W = 720, cw = Math.max(10, Math.min(56, Math.floor((W - 110) / Math.max(1, allDays.length)))), ch = Math.min(26, cw), pl = 96, pt = 24, Hh = pt + ch * SLOTS.length + 30;
   var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="grid">';
   SLOTS.forEach(function(nm, i){ s += '<text x="' + (pl - 10) + '" y="' + (pt + i * ch + ch / 2 + 4) + '" class="lab" text-anchor="end">' + nm + '</text>'; });
   allDays.forEach(function(d, j){ var es = days[d] || [], x = pl + j * cw; var dn = new Date(d + 'T12:00:00').getDay();
    if (cw >= 42 || (cw >= 16 && dn === 1) || (cw < 16 && j % 7 === 0)) s += '<text x="' + (x + cw / 2) + '" y="' + (pt - 8) + '" class="ax" text-anchor="middle">' + fmt(d) + '</text>';
-   for (var i = 0; i < 4; i++){ var v = es.filter(function(e){ return (SLOTS.indexOf(e.slot) >= 0 ? SLOTS.indexOf(e.slot) : slotFor(new Date(e.t))) === i; });
+   for (var i = 0; i < SLOTS.length; i++){ var v = es.filter(function(e){ return slotOf(e) === i; });
     if (!v.length){ s += '<rect x="' + (x + 1) + '" y="' + (pt + i * ch + 1) + '" width="' + (cw - 2) + '" height="' + (ch - 2) + '" class="empty"/>'; continue; }
     var m = v.reduce(function(a, b){ return a + b.e; }, 0) / v.length; s += '<rect x="' + (x + 1) + '" y="' + (pt + i * ch + 1) + '" width="' + (cw - 2) + '" height="' + (ch - 2) + '" rx="3" fill="' + shade(m) + '" opacity="' + (.35 + .065 * m).toFixed(2) + '"><title>' + fmt(d) + ' ' + SLOTS[i] + ': ' + v.map(function(e){ return e.e; }).join(' ') + '</title></rect>';
     if (v.length > 1) s += '<text x="' + (x + cw / 2) + '" y="' + (pt + i * ch + ch / 2 + 3) + '" class="tiny" text-anchor="middle">' + v.length + '</text>'; } });
@@ -640,21 +649,64 @@ function reportHTML(){
  })();
  // 4 · what goes with what
  function chipTable(kind, title, lede, colr){
-  var cnt = {}, sum = {}; L.forEach(function(e){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (!w) return; cnt[w] = (cnt[w] || 0) + 1; sum[w] = (sum[w] || 0) + e.e; }); });
+  var cnt = {}, sum = {}, nx = {}, nn = {}; L.forEach(function(e, i){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); var f = L[i + 1], nextE = f && (new Date(f.t) - new Date(e.t)) <= 12 * 36e5 ? f.e : null; arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (!w) return; cnt[w] = (cnt[w] || 0) + 1; sum[w] = (sum[w] || 0) + e.e; if (nextE !== null){ nx[w] = (nx[w] || 0) + nextE; nn[w] = (nn[w] || 0) + 1; } }); });
   var ws = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a] || a.localeCompare(b); }).slice(0, 14); if (!ws.length) return;
-  var W = 720, rh = 26, pl = 210, Hh = ws.length * rh + 30, iw = W - pl - 70, mx = cnt[ws[0]];
+  var W = 720, rh = 32, pl = 210, Hh = ws.length * rh + 30, iw = W - pl - 70, mx = cnt[ws[0]];
   var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="bars">';
   s += '<line x1="' + (pl + (mean / 10) * iw) + '" x2="' + (pl + (mean / 10) * iw) + '" y1="6" y2="' + (Hh - 20) + '" class="meanline"/><text x="' + (pl + (mean / 10) * iw) + '" y="' + (Hh - 6) + '" class="ax" text-anchor="middle">overall mean ' + mean.toFixed(1) + '</text>';
   ws.forEach(function(w, i){ var y = 10 + i * rh + rh / 2, m = sum[w] / cnt[w], own = START[kind].indexOf(w) < 0;
    s += '<text x="' + (pl - 14) + '" y="' + (y + 4) + '" class="lab' + (own ? ' own' : '') + '" text-anchor="end">' + esc(w) + '</text>';
-   s += '<rect x="' + pl + '" y="' + (y - 7) + '" width="' + (cnt[w] / mx * iw * .55).toFixed(1) + '" height="14" rx="7" fill="' + colr + '" opacity=".22"/>';
-   s += '<text x="' + (pl + 8) + '" y="' + (y + 4) + '" class="tiny">' + cnt[w] + '×</text>';
-   s += star(pl + (m / 10) * iw, y, 7, shade(m)) + '<text x="' + (pl + (m / 10) * iw + 11) + '" y="' + (y + 4) + '" class="ax">' + m.toFixed(1) + '</text>'; });
-  H.push('<section><h2>' + title + '</h2><p class="lede">' + lede + ' The bar is how often a word was chosen. The star is the mean number on the check-ins where it was. Words in italics were typed in rather than offered.</p>' + s + '</svg></section>');
+   s += '<rect x="' + pl + '" y="' + (y + 8) + '" width="' + (cnt[w] / mx * iw * .55).toFixed(1) + '" height="3" rx="1.5" fill="' + colr + '" opacity=".5"/>';
+   s += '<text x="' + (pl - 14) + '" y="' + (y + 15) + '" class="tiny" text-anchor="end" opacity=".6">' + cnt[w] + '×</text>';
+   var sx = pl + (m / 10) * iw; s += star(sx, y, 7, shade(m));
+   if (nn[w] >= 2){ var mn = nx[w] / nn[w], ex = pl + (mn / 10) * iw; s += '<line x1="' + sx + '" x2="' + ex + '" y1="' + y + '" y2="' + y + '" class="after"/><circle cx="' + ex + '" cy="' + y + '" r="3.2" fill="none" stroke="' + shade(mn) + '" stroke-width="1.2"/><text x="' + (Math.max(sx, ex) + 11) + '" y="' + (y + 4) + '" class="ax">' + m.toFixed(1) + ' → ' + mn.toFixed(1) + '</text>'; }
+   else s += '<text x="' + (sx + 11) + '" y="' + (y + 4) + '" class="ax">' + m.toFixed(1) + '</text>'; });
+  H.push('<section><h2>' + title + '</h2><p class="lede">' + lede + ' The bar is how often a word was chosen. The star is the mean number on the check-ins where it was. The hollow ring, where there is one, is the mean on the next check-in within twelve hours, so the line between them shows which way things tended to go afterwards. Words in italics were typed in rather than offered.</p>' + s + '</svg></section>');
  }
  chipTable('drain', 'what wore it down', 'Named at check-in, in the moment.', '#8b6fd6');
  chipTable('add', 'what lifted it', 'Named at check-in, in the moment.', '#21f6bc');
  chipTable('body', 'what the body asked for', 'Named at check-in, in the moment.', '#ffd36b');
+
+ // 4b · words that travel together
+ (function(){
+  var kindOf = {}, cnt = {}, pair = {};
+  L.forEach(function(e){ var ws = []; (e.drainChips || []).forEach(function(w){ ws.push(w); kindOf[w] = kindOf[w] || 'drain'; }); (e.addChips || []).forEach(function(w){ ws.push(w); kindOf[w] = kindOf[w] || 'add'; }); (e.body || []).forEach(function(w){ ws.push(w); kindOf[w] = kindOf[w] || 'body'; });
+   ws = ws.filter(function(w, i){ return ws.indexOf(w) === i; }); ws.forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; });
+   for (var i = 0; i < ws.length; i++) for (var j = i + 1; j < ws.length; j++){ var k = [ws[i], ws[j]].sort().join('|'); pair[k] = (pair[k] || 0) + 1; } });
+  var top = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a]; }).slice(0, 14), idx = {}; top.forEach(function(w, i){ idx[w] = i; });
+  var edges = Object.keys(pair).map(function(k){ var ab = k.split('|'); return { a:ab[0], b:ab[1], n:pair[k] }; }).filter(function(ed){ return ed.n >= 2 && ed.a in idx && ed.b in idx; }).sort(function(a, b){ return b.n - a.n; }).slice(0, 18);
+  if (edges.length < 2) return;
+  var W = 720, Hh = 440, cx = W / 2, cy = Hh / 2, R = 165, colr = { drain:'#8b6fd6', add:'#21f6bc', body:'#ffd36b' }, mxE = Math.max.apply(null, edges.map(function(e){ return e.n; }));
+  function P(i){ var a = -Math.PI / 2 + i / top.length * Math.PI * 2; return [cx + Math.cos(a) * R, cy + Math.sin(a) * R, a]; }
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="web">';
+  edges.forEach(function(ed){ var A = P(idx[ed.a]), B = P(idx[ed.b]), qx = (A[0] + B[0]) / 2 * .6 + cx * .4, qy = (A[1] + B[1]) / 2 * .6 + cy * .4; s += '<path d="M' + A[0].toFixed(1) + ',' + A[1].toFixed(1) + ' Q' + qx.toFixed(1) + ',' + qy.toFixed(1) + ' ' + B[0].toFixed(1) + ',' + B[1].toFixed(1) + '" fill="none" stroke="#bda6ff" stroke-width="' + (.5 + 2.5 * ed.n / mxE).toFixed(1) + '" opacity="' + (.12 + .55 * ed.n / mxE).toFixed(2) + '"><title>' + esc(ed.a) + ' + ' + esc(ed.b) + ' · ' + ed.n + '×</title></path>'; });
+  top.forEach(function(w, i){ var A = P(i), c = colr[kindOf[w]] || '#bda6ff', right = Math.cos(A[2]) > .1, left = Math.cos(A[2]) < -.1;
+   s += star(A[0], A[1], 4 + 5 * Math.min(1, cnt[w] / cnt[top[0]]), c) + '<text x="' + (A[0] + (right ? 14 : left ? -14 : 0)).toFixed(1) + '" y="' + (A[1] + (right || left ? 4 : (Math.sin(A[2]) < 0 ? -12 : 20))).toFixed(1) + '" class="lab" text-anchor="' + (right ? 'start' : left ? 'end' : 'middle') + '" fill="' + c + '">' + esc(w) + '</text>'; });
+  H.push('<section><h2>words that travel together</h2><p class="lede">The fourteen most-used words, any kind, violet for what wore it down, mint for what lifted it, gold for the body. The eighteen strongest pairs are threaded, where two words were named on the same check-in at least twice. Thicker means more often.</p>' + s + '</svg></section>');
+ })();
+ // 4c · week over week, one line each
+ (function(){
+  if (allDays.length < 8) return;
+  function monday(d){ var x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return localISO(x).slice(0, 10); }
+  var wk = {}; allDays.forEach(function(d){ var m = monday(d); (wk[m] = wk[m] || []).push(d); });
+  var ks = Object.keys(wk).sort(), W = 720, rh = 46, pl = 120, pr = 70, iw = W - pl - pr, Hh = ks.length * rh + 16;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="weeks">';
+  ks.forEach(function(m, r){ var y0 = 8 + r * rh, pts = [], all = [];
+   for (var i = 0; i < 7; i++){ var x = new Date(m + 'T12:00:00'); x.setDate(x.getDate() + i); var d = localISO(x).slice(0, 10), es = days[d] || []; if (es.length){ var mm = es.reduce(function(a, e){ return a + e.e; }, 0) / es.length; pts.push([pl + i / 6 * iw, y0 + rh - 8 - mm / 10 * (rh - 14), mm]); es.forEach(function(e){ all.push(e.e); }); } }
+   s += '<text x="' + (pl - 14) + '" y="' + (y0 + rh / 2 + 4) + '" class="lab" text-anchor="end">' + fmt(m) + '</text><line x1="' + pl + '" x2="' + (pl + iw) + '" y1="' + (y0 + rh - 8) + '" y2="' + (y0 + rh - 8) + '" class="rule"/>';
+   if (pts.length > 1) s += '<polyline points="' + pts.map(function(p){ return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" class="thread" style="opacity:.8"/>';
+   pts.forEach(function(p){ s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="' + shade(p[2]) + '"/>'; });
+   if (all.length) s += '<text x="' + (pl + iw + 12) + '" y="' + (y0 + rh / 2 + 4) + '" class="ax">' + (all.reduce(function(a, b){ return a + b; }, 0) / all.length).toFixed(1) + ' · ' + all.length + '</text>'; });
+  H.push('<section><h2>week over week</h2><p class="lede">One line per week, Monday to Sunday, each dot a day\'s mean. On the right, the week\'s mean and how many check-ins it rests on.</p>' + s + '</svg></section>');
+ })();
+ // 4d · the words that were typed in, and when they first came
+ (function(){
+  var first = {}, cnt = {}, kindOf = {};
+  L.forEach(function(e){ [['drainChips', 'drain'], ['addChips', 'add'], ['body', 'body']].forEach(function(kk){ (e[kk[0]] || []).forEach(function(w){ w = String(w).trim().toLowerCase(); if (!w || START[kk[1]].indexOf(w) >= 0) return; if (!first[w]) first[w] = dayOf(e.t); cnt[w] = (cnt[w] || 0) + 1; kindOf[w] = kk[1]; }); }); });
+  var ws = Object.keys(first).sort(function(a, b){ return first[a] < first[b] ? -1 : first[a] > first[b] ? 1 : cnt[b] - cnt[a]; }); if (!ws.length) return;
+  var colr = { drain:'#8b6fd6', add:'#21f6bc', body:'#ffd36b' };
+  H.push('<section><h2>words of your own</h2><p class="lede">Typed in rather than picked, in the order they first appeared. The number is how many times each has been used since.</p><ul class="own">' + ws.map(function(w){ return '<li><span class="when">' + fmt(first[w]) + '</span><span class="w" style="color:' + colr[kindOf[w]] + '">' + esc(w) + '</span><span class="n">' + cnt[w] + '×</span></li>'; }).join('') + '</ul></section>');
+ })();
  // 5 · cycle, only if logged
  (function(){
   var cs = L.filter(function(e){ return e.cyc; }); if (!cs.length) return;
@@ -672,9 +724,9 @@ function reportHTML(){
  // 6 · notes
  (function(){
   var ns = L.filter(function(e){ return e.note; }); if (!ns.length) return;
-  H.push('<section><h2>notes, verbatim</h2><ul class="notes">' + ns.map(function(e){ return '<li><span class="when">' + fmt(dayOf(e.t)) + ' · ' + e.slot + ' · ' + e.e + '</span><q>' + esc(e.note) + '</q></li>'; }).join('') + '</ul></section>');
+  H.push('<section><h2>notes, verbatim</h2><ul class="notes">' + ns.map(function(e){ return '<li><span class="when">' + fmt(dayOf(e.t)) + ' · ' + slotName(e) + ' · ' + e.e + '</span><q>' + esc(e.note) + '</q></li>'; }).join('') + '</ul></section>');
  })();
- var css = 'body{margin:0;background:#0a0118;color:#f0eaff;font:15px/1.6 "JetBrains Mono",ui-monospace,Menlo,monospace;-webkit-font-smoothing:antialiased}main{max-width:760px;margin:0 auto;padding:40px 20px 80px}h1{font:italic 300 44px/1.1 Fraunces,Georgia,serif;margin:0 0 6px}h2{font:italic 300 26px/1.2 Fraunces,Georgia,serif;margin:0 0 6px}section{margin-top:54px}p.lede,.sub{color:#a49bbd;font-size:13.5px;line-height:1.6;margin:0 0 14px}svg{width:100%;height:auto;display:block;overflow:visible}.rule{stroke:#2a1f4a;stroke-width:1}.ax{fill:#a49bbd;font-size:10.5px}.tiny{fill:#f0eaff;font-size:9.5px;opacity:.8}.lab{fill:#f0eaff;font-size:12px}.lab.own{font-style:italic;fill:#bda6ff}.thread{fill:none;stroke:#bda6ff;stroke-width:1;stroke-dasharray:2 3;opacity:.5}.meanline{stroke:#ffd36b;stroke-width:1;stroke-dasharray:3 4;opacity:.6}.range{stroke:#a49bbd;stroke-width:1;opacity:.5}.empty{fill:none;stroke:#2a1f4a;stroke-width:1}.key span{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 2px;vertical-align:middle}.notes{list-style:none;padding:0;margin:0}.notes li{margin:0 0 18px}.when{display:block;color:#a49bbd;font-size:12px}q{font:italic 300 19px/1.4 Fraunces,Georgia,serif;quotes:none}.sum{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0 0}.sum b{display:block;font:italic 300 38px/1 Fraunces,Georgia,serif;color:#ffd36b}.sum span{color:#a49bbd;font-size:12.5px}footer{margin-top:60px;color:#a49bbd;font-size:12.5px;border-top:1px solid #2a1f4a;padding-top:16px}@media print{body{background:#fff;color:#1a1030}.ax,.lede,.sub,.when,footer,.sum span{fill:#5a4a8a;color:#5a4a8a}.lab,.tiny{fill:#1a1030}.rule,.empty{stroke:#ddd}section{break-inside:avoid}}';
+ var css = 'body{margin:0;background:#0a0118;color:#f0eaff;font:15px/1.6 "JetBrains Mono",ui-monospace,Menlo,monospace;-webkit-font-smoothing:antialiased}main{max-width:760px;margin:0 auto;padding:40px 20px 80px}h1{font:italic 300 44px/1.1 Fraunces,Georgia,serif;margin:0 0 6px}h2{font:italic 300 26px/1.2 Fraunces,Georgia,serif;margin:0 0 6px}section{margin-top:54px}p.lede,.sub{color:#a49bbd;font-size:13.5px;line-height:1.6;margin:0 0 14px}svg{width:100%;height:auto;display:block;overflow:visible}.rule{stroke:#2a1f4a;stroke-width:1}.ax{fill:#a49bbd;font-size:10.5px}.tiny{fill:#f0eaff;font-size:9.5px;opacity:.8}.lab{fill:#f0eaff;font-size:12px}.lab.own{font-style:italic;fill:#bda6ff}.thread{fill:none;stroke:#bda6ff;stroke-width:1;stroke-dasharray:2 3;opacity:.5}.meanline{stroke:#ffd36b;stroke-width:1;stroke-dasharray:3 4;opacity:.6}.range{stroke:#a49bbd;stroke-width:1;opacity:.5}.empty{fill:none;stroke:#2a1f4a;stroke-width:1}.key span{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 2px;vertical-align:middle}.after{stroke:#a49bbd;stroke-width:1;stroke-dasharray:2 2;opacity:.7}.own{list-style:none;padding:0;margin:0;columns:2;column-gap:28px}.own li{display:flex;gap:12px;align-items:baseline;margin:0 0 8px;break-inside:avoid}.own .when{display:inline;min-width:46px}.own .w{font:italic 300 18px/1.3 Fraunces,Georgia,serif}.own .n{color:#a49bbd;font-size:11.5px}.notes{list-style:none;padding:0;margin:0}.notes li{margin:0 0 18px}.when{display:block;color:#a49bbd;font-size:12px}q{font:italic 300 19px/1.4 Fraunces,Georgia,serif;quotes:none}.sum{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0 0}.sum b{display:block;font:italic 300 38px/1 Fraunces,Georgia,serif;color:#ffd36b}.sum span{color:#a49bbd;font-size:12.5px}footer{margin-top:60px;color:#a49bbd;font-size:12.5px;border-top:1px solid #2a1f4a;padding-top:16px}@media print{body{background:#fff;color:#1a1030}.ax,.lede,.sub,.when,footer,.sum span{fill:#5a4a8a;color:#5a4a8a}.lab,.tiny{fill:#1a1030}.rule,.empty{stroke:#ddd}section{break-inside:avoid}}';
  var fonts = '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,300&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">';
  var lowDays = dk.filter(function(d){ return days[d].reduce(function(a, e){ return a + e.e; }, 0) / days[d].length < 4; }).length;
  var head = '<main><h1>energy, so far</h1><p class="sub">A plain record of how the number moved, built from ' + n + ' check-ins between ' + fmtY(dk[0]) + ' and ' + fmtY(dk[dk.length - 1]) + '. Nothing here is inferred. Only what was logged, counted.</p><div class="sum"><div><b>' + mean.toFixed(1) + '</b><span>mean, 0 to 10</span></div><div><b>' + n + '</b><span>check-ins</span></div><div><b>' + dk.length + '</b><span>days</span></div><div><b>' + lowDays + '</b><span>days under 4</span></div></div>';
@@ -689,11 +741,16 @@ function shareReport(){
  a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 500);
 }
 document.getElementById('reportBtn').addEventListener('click', shareReport);
+// quiet mode hides the words for seven days; the number and the shape stay. The log keeps its structure.
+function quietUntil(){ var u = +store.get('en-quiet') || 0; return u > Date.now() ? u : 0; }
+function paintQuiet(){ var u = quietUntil(), b = document.getElementById('quietBtn'); document.documentElement.classList.toggle('quiet', !!u); b.textContent = u ? 'End quiet (until ' + new Date(u).toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ')' : 'Quiet week'; }
+document.getElementById('quietBtn').addEventListener('click', function(){ if (quietUntil()){ store.del('en-quiet'); toast('words are back'); } else { store.set('en-quiet', String(Date.now() + 7 * 864e5)); toast('quiet for a week. just the number.'); } paintQuiet(); });
+paintQuiet();
 
 // ── save ─────────────────────────────────────────────────────────────
 document.getElementById('save').addEventListener('click', function(){
  if (val === null) return;
- var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], e:val };
+ var d = new Date(), e = { t:localISO(d), slot:SLOTS[slotFor(d)], z:-d.getTimezoneOffset(), e:val };
  var nt = document.getElementById('jot').value.trim(); if (nt) e.note = nt;
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
@@ -781,11 +838,20 @@ function showNote(e){
  document.getElementById('note').innerHTML = p.join('<br>');
 }
 // Only plain counts and means over the last 28 days. Nothing here claims a cause.
+function paintGlance(log){
+ var cut = new Date(); cut.setDate(cut.getDate() - 7); var rec = log.filter(function(e){ return new Date(e.t) >= cut; }), box = document.getElementById('glance');
+ if (rec.length < 3){ box.textContent = ''; return; }
+ var by = {}; rec.forEach(function(e){ var k = slotName(e); (by[k] = by[k] || []).push(e.e); });
+ var parts = SLOTS.filter(function(k){ return by[k] && by[k].length >= 2; }).map(function(k){ var a = by[k]; return k + 's <b>' + (a.reduce(function(x, y){ return x + y; }, 0) / a.length).toFixed(1) + '</b>'; });
+ var days = {}; rec.forEach(function(e){ days[dayOf(e.t)] = 1; });
+ box.innerHTML = 'last seven days · ' + rec.length + ' check-ins over ' + Object.keys(days).length + ' days' + (parts.length ? ' · ' + parts.join(' · ') : '');
+}
 function paintInsight(log){
  var box = document.getElementById('insight'), cut = new Date(); cut.setDate(cut.getDate() - 28);
  var rec = log.filter(function(e){ return new Date(e.t) >= cut; });
+ paintGlance(log);
  if (rec.length < 8){ box.innerHTML = rec.length ? 'the sky fills in as you go.' : ''; return; }
- var bySlot = {}; rec.forEach(function(e){ (bySlot[e.slot] = bySlot[e.slot] || []).push(e.e); });
+ var bySlot = {}; rec.forEach(function(e){ var k = slotName(e); (bySlot[k] = bySlot[k] || []).push(e.e); });
  var means = SLOTS.filter(function(s){ return bySlot[s] && bySlot[s].length >= 2; }).map(function(s){ var a = bySlot[s]; return { s:s, m:a.reduce(function(x,y){ return x+y; }, 0) / a.length }; }).sort(function(a,b){ return b.m - a.m; });
  var cnt = function(k){ var c = {}; rec.forEach(function(e){ (e[k] || []).forEach(function(w){ c[w] = (c[w] || 0) + 1; }); }); var top = Object.keys(c).sort(function(a,b){ return c[b] - c[a]; })[0]; return top ? { w:top, n:c[top] } : null; };
  var d = cnt('drainChips'), a = cnt('addChips'), b = cnt('body'), p = [];
