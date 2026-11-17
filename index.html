@@ -131,6 +131,10 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .skyBar button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:13px; padding:8px 0; cursor:pointer; } #hlBar{ border:1px solid var(--c, var(--line)); border-radius:999px; padding:4px 12px; color:var(--ink); } #hlBar i{ font-style:normal; color:var(--mute); margin-left:8px; } #skyPlay{ margin-left:auto; }
 .ribbon{ margin-top:22px; } .ribbon p{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:0 0 8px; } .ribbon svg{ display:block; width:100%; height:auto; overflow:visible; cursor:pointer; } .ribbon text{ font-family:var(--mono); font-size:8.5px; fill:var(--mute); }
 .after .wh{ display:block; font:italic 300 16px/1.4 var(--serif); color:var(--mute); margin-top:4px; animation:whIn 1.2s ease both .3s; } @keyframes whIn{ from{ opacity:0; transform:translateY(4px); } }
+.try{ margin:14px auto 0; max-width:320px; padding:14px; border:1px solid var(--line); border-radius:6px; color:var(--ink); font-size:15px; line-height:1.5; text-align:left; animation:whIn .9s ease both .5s; }
+.try span{ display:block; color:var(--mute); font-size:12px; letter-spacing:.08em; margin-bottom:6px; } .try div{ display:flex; gap:8px; margin-top:12px; }
+.try button{ flex:1; padding:10px; border:1px solid var(--line); border-radius:999px; background:none; color:var(--ink); font:inherit; font-size:14px; cursor:pointer; } .try button:first-child{ border-color:var(--orchid); }
+#tryAsk:empty{ display:none; } #tryAsk .try{ margin:0 0 26px; max-width:none; animation:none; }
 .note a.card{ display:inline-block; margin-top:10px; color:var(--orchid); font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 @keyframes insPt{ from{ opacity:0; transform:scale(.2); } } @keyframes insMn{ from{ opacity:0; transform:translateY(8px) scale(.4) rotate(-40deg); } }
 @media (prefers-reduced-motion:reduce){ .insight .pt, .insight .mn, .insight .wr .tal i{ animation:none; } }
@@ -159,6 +163,7 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <div class="sync" id="syncDot"><svg class="ring" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" id="ringBg"/><circle cx="17" cy="17" r="15" id="ringFg"/></svg><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg><i></i><i></i></div>
 </div>
 
+<div id="tryAsk"></div>
 <p class="q">how much energy is in you right now?</p>
 <div class="fieldWrap" id="fieldWrap">
  <canvas id="field" aria-hidden="true"></canvas>
@@ -221,7 +226,7 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <div class="row"><button id="ghSave" type="submit">Connect</button><button id="ghNow" type="button">Sync now</button><button id="ghOff" type="button">Forget</button></div>
  </form>
  <div class="row"><button id="exportBtn" type="button">Export file</button><button id="reportBtn" type="button" hidden>A report to share</button></div>
- <div class="row"><button id="quietBtn" type="button">Quiet week</button></div>
+ <div class="row"><button id="quietBtn" type="button">Quiet week</button><button id="expBtn" type="button">Experiment</button></div>
  <div class="st" id="ghNote"></div>
 </details>
 
@@ -317,7 +322,7 @@ var stars = (function(){
 })();
 
 // ── header ───────────────────────────────────────────────────────────
-function paintHead(){
+function paintHead(){ paintTryAsk();
  var d = new Date(), s = slotFor(d);
  document.getElementById('slot').textContent = d.toLocaleDateString(undefined, { weekday:'long' }).toLowerCase() + ' ' + SLOTS[s];
  document.getElementById('when').textContent = d.toLocaleDateString(undefined, { month:'long', day:'numeric' }).toLowerCase();
@@ -772,6 +777,39 @@ function paintQuiet(){ var u = quietUntil(), b = document.getElementById('quietB
 document.getElementById('quietBtn').addEventListener('click', function(){ if (quietUntil()){ store.del('en-quiet'); toast('words are back'); } else { store.set('en-quiet', String(Date.now() + 7 * 864e5)); toast('quiet for a week. just the number.'); } paintQuiet(); });
 paintQuiet();
 
+// ── a small experiment ───────────────────────────────────────────────
+// After a low check-in one option is drawn at random, 'nothing' included, and
+// kept on the entry whether or not it is taken up. The comparison is by what
+// was drawn, never by what was done, so picking on good days cannot tilt it.
+var ARMS = [{ k:'outside', n:'outside', t:'ten minutes outside' }, { k:'breath', n:'a long breath', t:'a minute of long slow breaths' }, { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower' }, { k:'nothing', n:'nothing', t:'' }];
+function armOf(k){ return ARMS.filter(function(a){ return a.k === k; })[0]; }
+function expOn(){ return store.get('en-exp') !== '0'; }
+function tryPick(e){
+ if (!expOn() || quietUntil() || e.e > 4) return null;
+ var cut = Date.now() - 4 * 36e5; if (readLog().some(function(o){ return o.try && +new Date(o.t) > cut; })) return null;
+ var r; try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch(_){ r = Math.random(); }
+ return ARMS[Math.floor(r * ARMS.length)];
+}
+function trySet(t, k, v){ var x = readLog().filter(function(o){ return o.t === t; })[0]; if (!x || !x.try) return; x.try[k] = v; if (k === 'ok' && !v) x.try.did = 0; writeLog(readLog()); markDirty(); ghPush(1); }
+function tryCard(af, e, arm){
+ var d = document.createElement('div'); d.className = 'try';
+ if (arm.k === 'nothing'){ d.innerHTML = '<span>a small experiment</span>this time, nothing. carry on as you are.'; af.appendChild(d); return; }
+ d.innerHTML = '<span>a small experiment</span>try ' + arm.t + '?<div><button type="button">ok</button><button type="button">not now</button></div>';
+ af.appendChild(d); var bs = d.querySelectorAll('button');
+ bs[0].addEventListener('click', function(){ trySet(e.t, 'ok', 1); d.querySelector('div').remove(); if (arm.k === 'breath') breath.start('breath'); });
+ bs[1].addEventListener('click', function(){ trySet(e.t, 'ok', 0); d.remove(); });
+}
+function paintTryAsk(){
+ var box = document.getElementById('tryAsk'), log = readLog(), p = null;
+ for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try){ var age = (Date.now() - new Date(e.t)) / 6e4; if (e.try.a !== 'nothing' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
+ if (!p || !expOn()){ box.innerHTML = ''; return; }
+ if (box.dataset.t === p.t && box.firstChild) return; box.dataset.t = p.t;
+ box.innerHTML = '<div class="try"><span>earlier</span>' + armOf(p.try.a).t + '. did it happen?<div><button type="button">yes</button><button type="button">no</button></div></div>';
+ var bs = box.querySelectorAll('button'), t = p.t;
+ bs[0].addEventListener('click', function(){ trySet(t, 'did', 1); box.innerHTML = ''; }); bs[1].addEventListener('click', function(){ trySet(t, 'did', 0); box.innerHTML = ''; });
+}
+function paintExp(){ document.getElementById('expBtn').textContent = expOn() ? 'Experiment on' : 'Experiment off'; }
+document.getElementById('expBtn').addEventListener('click', function(){ store.set('en-exp', expOn() ? '0' : '1'); paintExp(); paintTryAsk(); toast(expOn() ? 'after a low check-in, one small thing at random' : 'experiment paused'); });
 // the same part of day a week back, else yesterday. silent when there is nothing to say.
 function whisper(d){
  var sl = slotFor(d), log = readLog(), f = function(back){ var x = new Date(d); x.setDate(x.getDate() - back); var ds = localISO(x).slice(0,10), m = log.filter(function(e){ return dayOf(e.t) === ds && slotOf(e) === sl; }); return m.length ? { v:m[m.length-1].e, x:x } : null; };
@@ -788,14 +826,16 @@ document.getElementById('save').addEventListener('click', function(){
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
- var wh = whisper(d);
+ var wh = whisper(d), arm = tryPick(e); if (arm) e.try = { a:arm.k };
  var a = readLog(); a.push(e); writeLog(a);
  field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky();
  var af = document.getElementById('after');
- if (bc.indexOf('a long breath') >= 0) af.innerHTML = 'saved.<a id="afBreath">breathe?</a>';
+ if (arm) af.textContent = 'saved.';
+ else if (bc.indexOf('a long breath') >= 0) af.innerHTML = 'saved.<a id="afBreath">breathe?</a>';
  else if (bc.indexOf('slow down') >= 0) af.innerHTML = 'saved.<a id="afStill">a minute of nothing?</a>';
  else af.textContent = 'saved.';
  if (wh){ var ws = document.createElement('span'); ws.className = 'wh'; ws.textContent = wh; af.appendChild(ws); }
+ if (arm) tryCard(af, e, arm);
  var ab = document.getElementById('afBreath'), as = document.getElementById('afStill');
  if (ab) ab.addEventListener('click', function(){ breath.start('breath'); }); if (as) as.addEventListener('click', function(){ breath.start('still'); });
  markDirty(); ghPush(1);
@@ -989,6 +1029,11 @@ function paintInsight(log){
  var turns = function(c, n, title, col, key){ var top = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; }).slice(0, 5); if (n < 2 || !top.length || c[top[0]] < 2) return;
   H.push('<h4 style="--c:' + col + '">' + title + ' <small>· ' + n + ' jumps of two or more</small></h4><div class="pls">' + top.map(function(w){ return '<button type="button" class="pl" data-k="' + key + '" data-w="' + esc(w) + '" style="--c:' + col + '">' + esc(w) + '<em>' + c[w] + '</em></button>'; }).join('') + '</div>'); };
  turns(up, nu, 'on the way up', css('--mint'), 'addChips'); turns(dn, nd, 'on the way down', css('--violet'), 'drainChips');
+ var tr = {}, all = readLog(), any = 0; all.forEach(function(e, i){ if (!e.try || !armOf(e.try.a)) return; var o = tr[e.try.a] = tr[e.try.a] || { n:0, d:[] }, nx = all[i + 1]; o.n++; any++; if (nx){ var gap = (new Date(nx.t) - new Date(e.t)) / 36e5; if (gap >= .25 && gap <= 12) o.d.push(nx.e - e.e); } });
+ if (any){ var er = '<h4 style="--c:' + css('--orchid') + '">the small experiment <small>· ' + any + ' so far</small></h4>';
+  ARMS.forEach(function(a){ var o = tr[a.k]; if (!o) return; var dd = ''; for (var j = 0; j < Math.min(o.n, 12); j++) dd += '<i style="--i:' + j + '"></i>'; var m = o.d.length ? mean(o.d) : null;
+   er += '<div class="wr" style="--c:' + css('--orchid') + '"><span class="w">' + a.n + '</span><span class="tal">' + dd + (o.n > 12 ? '<em>+' + (o.n - 12) + '</em>' : '') + '</span><span class="at">' + o.n + '× · <b>' + (m === null ? '–' : (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1)) + '</b></span></div>'; });
+  H.push(er + '<p class="foot" style="margin-top:8px">after a low check-in, one is drawn at random. the number is the average change by the next check-in. too early to read until each has about fifteen.</p>'); }
  H.push('<p class="foot">last four weeks · ' + rec.length + ' check-ins. every dot is one. the number beside a word is the average energy when it was picked. tap a word to light it in the sky. counts only, no causes.</p>');
  box.innerHTML = H.join('');
  box.querySelectorAll('[data-w]').forEach(function(el){ el.addEventListener('click', function(){ var k = el.dataset.k, w = el.dataset.w; hl = (hl && hl.k === k && hl.w === w) ? null : { k:k, w:w }; paintHL(true); }); });
@@ -1034,8 +1079,10 @@ var dirtySeq = 0;
 function markDirty(){ dirtySeq++; store.set('en-dirty', String(dirtySeq)); }
 function okEntry(e){ return e && typeof e.t === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(e.t) && typeof e.e === 'number'; }
 function merge(remote){
- var loc = readLog(), seen = {}, added = 0; loc.forEach(function(e){ seen[e.t] = 1; });
- (Array.isArray(remote) ? remote : []).forEach(function(e){ if (okEntry(e) && !seen[e.t]){ loc.push(e); seen[e.t] = 1; added++; } });
+ var loc = readLog(), seen = {}, added = 0; loc.forEach(function(e){ seen[e.t] = e; });
+ (Array.isArray(remote) ? remote : []).forEach(function(e){ if (!okEntry(e)) return; var m = seen[e.t];
+  if (!m){ loc.push(e); seen[e.t] = e; added++; }
+  else if (e.try && m.try && e.try.a === m.try.a){ ['ok', 'did'].forEach(function(k){ if (m.try[k] == null && e.try[k] != null){ m.try[k] = e.try[k]; added++; } }); } });
  if (added) writeLog(loc); return added;
 }
 function ghPull(quiet){
@@ -1097,7 +1144,7 @@ document.getElementById('ghNow').addEventListener('click', function(){ if (!read
 document.getElementById('ghOff').addEventListener('click', function(){ if (!readGH()) return; if (!confirm('Forget the token on this device? Everything already synced stays in the repo.')) return; writeGH(null); paintGH(); toast('Forgotten'); });
 
 dirtySeq = +(store.get('en-dirty') || 0);
-paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); paintGH();
+paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); paintGH(); paintExp();
 addEventListener('pageshow', function(e){ if (e.persisted){ document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = ''; } });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ paintDial(); paintSky(); });
 if (readGH()) ghPull(1).then(function(){ flush(); });
