@@ -65,7 +65,7 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .sec{ margin-top:32px; } .sec .q{ font-size:20px; margin-bottom:12px; }
 .chip.more{ color:var(--mute); border-color:transparent; padding-left:4px; padding-right:4px; text-decoration:underline; text-underline-offset:4px; }
 .chip.own{ color:var(--mute); border-color:transparent; padding-left:4px; padding-right:4px; text-decoration:underline; text-underline-offset:4px; } .chip.own:has(input){ border-color:var(--line); padding:12px 14px; text-decoration:none; }
-.chip input{ background:none; border:0; outline:0; color:var(--ink); font:inherit; width:9em; padding:0; }
+.chips .brk{ flex-basis:100%; height:0; margin-top:-8px; } .chip input[type=text]{ background:none; border:0; outline:0; color:var(--ink); font:inherit; font-size:16px; width:9em; height:18px; line-height:18px; padding:0; border-radius:0; display:block; }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:#cdc4e6; line-height:1.2; user-select:none; -webkit-user-select:none; cursor:pointer; }
 .chip{ transition:background .25s, border-color .25s, color .25s, transform .18s; } .chip:active{ transform:scale(.96); }
@@ -237,7 +237,9 @@ var store = { get:function(k){ try { return localStorage.getItem(k); } catch(e){
  set:function(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } }, del:function(k){ try { localStorage.removeItem(k); } catch(e){} } };
 var _log = null;
 function readLog(){ if (_log) return _log; var raw = store.get('en-log') || '[]'; try { var a = JSON.parse(raw); _log = Array.isArray(a) ? a : []; } catch(e){ store.set('en-log-bad', raw); _log = []; } return _log; }
-function writeLog(a){ a.sort(function(x,y){ return x.t < y.t ? -1 : 1; }); _log = a; if (!store.set('en-log', JSON.stringify(a))) toast('not saved: storage is full or blocked'); }
+function at(e){ if (typeof e.z === 'number'){ var s = e.t.slice(0, 19); if (s.length === 16) s += ':00'; var u = Date.parse(s + 'Z'); if (!isNaN(u)) return u - e.z * 6e4; } return +new Date(e.t); }
+function byAt(x, y){ return at(x) - at(y) || (x.t < y.t ? -1 : 1); }
+function writeLog(a){ a.sort(byAt); _log = a; if (!store.set('en-log', JSON.stringify(a))) toast('not saved: storage is full or blocked'); }
 function pad(n){ return (n < 10 ? '0' : '') + n; }
 function localISO(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 function dayOf(t){ return t.slice(0,10); }
@@ -488,10 +490,11 @@ var breath = (function(){
    x.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + al.toFixed(2) + ')';
    x.fillRect(cx + x1 * fr, cy + Y * fr, sz, sz);
   }
-  requestAnimationFrame(frame);
+  braf = requestAnimationFrame(frame);
  }
  var rgb = [139,111,214];
- function start(m){ mode = m; size(); on = true; t0 = performance.now(); rad = .3; fade = -1; var col = css('--a') || '#8b6fd6'; rgb = [parseInt(col.slice(1,3),16), parseInt(col.slice(3,5),16), parseInt(col.slice(5,7),16)]; box.classList.add('show'); field.hide(true); requestAnimationFrame(frame); }
+ var braf = 0;
+ function start(m){ cancelAnimationFrame(braf); mode = m; size(); on = true; t0 = performance.now(); rad = .3; fade = -1; var col = css('--a') || '#8b6fd6'; rgb = [parseInt(col.slice(1,3),16), parseInt(col.slice(3,5),16), parseInt(col.slice(5,7),16)]; box.classList.add('show'); field.hide(true); braf = requestAnimationFrame(frame); }
  function stop(msg){ on = false; box.classList.remove('show'); field.hide(false); if (msg) toast(msg); }
  box.addEventListener('click', function(){ stop(); });
  addEventListener('resize', size);
@@ -578,12 +581,13 @@ function paintChips(){
   var cnt = tally(kind).cnt, list = START[kind].concat(learned(kind)).map(function(w, i){ return { w:w, i:i, n:cnt[w] || 0 }; }).sort(function(a, b){ return b.n - a.n || a.i - b.i; }).map(function(o){ return o.w; }); if (chipOrd[kind]) list = chipOrd[kind].concat(list.filter(function(w){ return chipOrd[kind].indexOf(w) < 0; })); else chipOrd[kind] = list; var full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
   var show = (full ? list : list.slice(0, 6)).concat(own[kind].filter(function(w){ return list.indexOf(w) < 0; }));
   var h = show.map(function(w){ return '<span class="chip' + (on[w] ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
+  h.push('<i class="brk"></i>');
   if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
   h.push(ownOpen[kind] ? '<span class="chip own" data-own="1"><input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done"></span>' : '<span class="chip own" data-own="1">+ your own</span>');
   var typing = box.querySelector('.chip[data-own] input'), kept = typing ? typing.value : '';
   box.innerHTML = h.join('');
   if (ownOpen[kind]) wireOwn(kind, box, list, kept);
-  Array.prototype.forEach.call(box.children, function(c){ c.addEventListener('click', function(){
+  Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
    if (c.dataset.own){ if (c.querySelector('input')) return; ownOpen[kind] = 1; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; wireOwn(kind, box, list); return; }
    c.classList.toggle('on'); if (c.classList.contains('on')){ field.fx(kind); spark(c, kind); stars.nudge(kind); } if (navigator.vibrate) navigator.vibrate(3); }); });
@@ -626,7 +630,7 @@ function picked(kind){ var a = []; Array.prototype.forEach.call(document.querySe
 
 // ── a report: one self-contained page built from the log, only offered once connected ──
 function reportHTML(){
- var L = readLog().filter(okEntry).slice().sort(function(a, b){ return a.t < b.t ? -1 : 1; });
+ var L = readLog().filter(okEntry).slice().sort(byAt);
  var days = {}; L.forEach(function(e){ (days[dayOf(e.t)] = days[dayOf(e.t)] || []).push(e); });
  var dk = Object.keys(days).sort(), n = L.length, allDays = [];
  if (dk.length){ for (var dd = new Date(dk[0] + 'T12:00:00'), end = dk[dk.length - 1]; ; dd.setDate(dd.getDate() + 1)){ var ks = localISO(dd).slice(0, 10); allDays.push(ks); if (ks >= end) break; } }
@@ -678,7 +682,7 @@ function reportHTML(){
  })();
  // 4 · what goes with what
  function chipTable(kind, title, lede, colr){
-  var cnt = {}, sum = {}, nx = {}, nn = {}; L.forEach(function(e, i){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); var f = L[i + 1], nextE = f && (new Date(f.t) - new Date(e.t)) <= 12 * 36e5 ? f.e : null; arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (!w) return; cnt[w] = (cnt[w] || 0) + 1; sum[w] = (sum[w] || 0) + e.e; if (nextE !== null){ nx[w] = (nx[w] || 0) + nextE; nn[w] = (nn[w] || 0) + 1; } }); });
+  var cnt = {}, sum = {}, nx = {}, nn = {}; L.forEach(function(e, i){ var arr = kind === 'body' ? (e.body || []) : (e[kind + 'Chips'] || []).concat(typeof e[kind] === 'string' ? [e[kind]] : []); var f = L[i + 1], nextE = f && (at(f) - at(e)) <= 12 * 36e5 ? f.e : null; arr.forEach(function(w){ w = String(w).trim().toLowerCase(); if (!w) return; cnt[w] = (cnt[w] || 0) + 1; sum[w] = (sum[w] || 0) + e.e; if (nextE !== null){ nx[w] = (nx[w] || 0) + nextE; nn[w] = (nn[w] || 0) + 1; } }); });
   var ws = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a] || a.localeCompare(b); }).slice(0, 14); if (!ws.length) return;
   var W = 720, rh = 32, pl = 210, Hh = ws.length * rh + 30, iw = W - pl - 70, mx = cnt[ws[0]];
   var s = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="bars">';
@@ -780,12 +784,12 @@ paintQuiet();
 // After a low check-in one option is drawn at random, 'nothing' included, and
 // kept on the entry whether or not it is taken up. The comparison is by what
 // was drawn, never by what was done, so picking on good days cannot tilt it.
-var ARMS = [{ k:'outside', n:'outside', t:'ten minutes outside', alt:'ten minutes by a window, in the daylight', altQ:'too cold or wet out?' }, { k:'breath', n:'a long breath', t:'a minute of long slow breaths' }, { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower' }, { k:'nothing', n:'nothing', t:'' }];
+var ARMS = [{ k:'outside', n:'outside', t:'ten minutes outside', alt:'ten minutes somewhere else: another room, a different chair, a window', altQ:'too cold, wet or dark out?' }, { k:'breath', n:'a long breath', t:'a minute of long slow breaths' }, { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower' }, { k:'nothing', n:'nothing', t:'' }];
 function armOf(k){ return ARMS.filter(function(a){ return a.k === k; })[0]; }
 function expOn(){ return store.get('en-exp') !== '0'; }
 function tryPick(e){
  if (!expOn() || quietUntil() || e.e > 4) return null;
- var cut = Date.now() - 4 * 36e5; if (readLog().some(function(o){ return o.try && +new Date(o.t) > cut; })) return null;
+ var cut = Date.now() - 4 * 36e5; if (readLog().some(function(o){ return o.try && at(o) > cut; })) return null;
  var r; try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch(_){ r = Math.random(); }
  return ARMS[Math.floor(r * ARMS.length)];
 }
@@ -808,7 +812,7 @@ function tryCard(af, e, arm){
 }
 function paintTryAsk(){
  var log = readLog(), p = null;
- for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ var age = (Date.now() - new Date(e.t)) / 6e4; if (e.try.a !== 'nothing' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
+ for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ var age = (Date.now() - at(e)) / 6e4; if (e.try.a !== 'nothing' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
  if (trayKind === 'saved') return;
  var tr = document.getElementById('tray');
  if (!p || !expOn() || askSkip === p.t){ if (trayKind === 'ask') trayHide(); return; }
@@ -924,7 +928,8 @@ function paintHL(scroll){
  box.querySelectorAll('[data-w]').forEach(function(el){ el.classList.toggle('on', !!hl && el.dataset.k === hl.k && el.dataset.w === hl.w); });
  b.hidden = !hl; if (hl){ b.style.setProperty('--c', css(KCOL[hl.k])); b.innerHTML = esc(hl.w) + '<i>clear ×</i>'; }
  paintSky(undefined, true); skyGo();
- if (hl && scroll) document.querySelector('.sky').scrollIntoView({ behavior:'smooth', block:'start' });
+ if (hl && scroll && document.getElementById('skyC').getBoundingClientRect().bottom < 80){ var d = document.createElement('div'); d.innerHTML = '<span class="ok"></span><a>see it in the sky</a>'; d.firstChild.textContent = hl.w + ' is lit.'; d.querySelector('a').addEventListener('click', function(){ trayHide(); document.querySelector('.sky').scrollIntoView({ behavior:'smooth', block:'start' }); }); if (trayKind !== 'saved') trayShow('hl', d, 5000); }
+ if (!hl && trayKind === 'hl') trayHide();
 }
 document.getElementById('hlBar').addEventListener('click', function(){ hl = null; paintHL(); });
 var skyRaf = 0, skyOn = false;
@@ -1040,7 +1045,7 @@ function paintInsight(log){
  var turns = function(c, n, title, col, key){ var top = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; }).slice(0, 5); if (n < 2 || !top.length || c[top[0]] < 2) return;
   H.push('<h4 style="--c:' + col + '">' + title + ' <small>· ' + n + ' jumps of two or more</small></h4><div class="pls">' + top.map(function(w){ return '<button type="button" class="pl" data-k="' + key + '" data-w="' + esc(w) + '" style="--c:' + col + '">' + esc(w) + '<em>' + c[w] + '</em></button>'; }).join('') + '</div>'); };
  turns(up, nu, 'on the way up', css('--mint'), 'addChips'); turns(dn, nd, 'on the way down', css('--violet'), 'drainChips');
- var tr = {}, all = readLog(), any = 0; all.forEach(function(e, i){ if (!e.try || !armOf(e.try.a)) return; var o = tr[e.try.a] = tr[e.try.a] || { n:0, d:[] }, nx = all[i + 1]; o.n++; any++; if (nx){ var gap = (new Date(nx.t) - new Date(e.t)) / 36e5; if (gap >= .25 && gap <= 12) o.d.push(nx.e - e.e); } });
+ var tr = {}, all = readLog(), any = 0; all.forEach(function(e, i){ if (!e.try || !armOf(e.try.a)) return; var o = tr[e.try.a] = tr[e.try.a] || { n:0, d:[] }, nx = all[i + 1]; o.n++; any++; if (nx){ var gap = (at(nx) - at(e)) / 36e5; if (gap >= .25 && gap <= 12) o.d.push(nx.e - e.e); } });
  if (any){ var er = '<h4 style="--c:' + css('--orchid') + '">the small experiment <small>· ' + any + ' so far</small></h4>';
   ARMS.forEach(function(a){ var o = tr[a.k]; if (!o) return; var dd = ''; for (var j = 0; j < Math.min(o.n, 12); j++) dd += '<i style="--i:' + j + '"></i>'; var m = o.d.length ? mean(o.d) : null;
    er += '<div class="wr" style="--c:' + css('--orchid') + '"><span class="w">' + a.n + '</span><span class="tal">' + dd + (o.n > 12 ? '<em>+' + (o.n - 12) + '</em>' : '') + '</span><span class="at">' + o.n + '× · <b>' + (m === null ? '–' : (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1)) + '</b></span></div>'; });
@@ -1109,9 +1114,13 @@ function ghPull(quiet){
   if (!j) return 0;
   var cc = readGH(); if (!cc) return 0;
   cc.sha = j.sha; delete cc.err; writeGH(cc);
+  if (!j.content && j.sha) return fetch(GH_API + '/repos/' + cc.repo + '/git/blobs/' + j.sha, { headers:ghHead(cc), cache:'no-store' }).then(function(r){ if (!r.ok) throw new Error('GitHub said ' + r.status); return r.json(); }).then(pulled);
+  return pulled(j);
+ }).catch(function(e){ if (offline(e)) return false; var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
+ function pulled(j){
   var data = null; try { data = JSON.parse(b64dec(j.content)); } catch(e){ throw new Error('log.json in the repo is not valid JSON.'); }
   var n = merge(data); if (n){ paintHead(); if (!document.querySelector('.chip input')) paintChips(); paintCyc(); paintDial(); paintSky(); } paintGH(); return n;
- }).catch(function(e){ if (offline(e)) return false; var cc = readGH(); if (cc) ghErr(cc, e.message); if (!quiet) toast(e.message); return false; });
+ }
 }
 var busy = null;
 function ghPush(quiet, retried){
