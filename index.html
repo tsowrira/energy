@@ -797,7 +797,7 @@ var ARMS = [
  { k:'people', n:'people', t:'send one warm message to someone you like', l:'call or find someone for ten minutes, or a long hug' },
  { k:'thread', n:'one thread', t:'close every tab and session but one', l:'ten minutes: write down every open thread, pick one, park the rest' },
  { k:'tap', n:'tapping', t:'two minutes: tap with your fingertips on the collarbone, then the side of the hand, breathing slow', l:'five minutes, a full round: brow, beside the eye, under the eye, chin, collarbone, under the arm, top of the head' },
- { k:'nothing', n:'nothing', t:'' },
+ { k:'nothing', n:'nothing', t:'' }, { k:'silent', n:'no card', t:'' },
  { k:'walk', n:'a walk', t:'a ten minute walk', old:1 }, { k:'tea', n:'tea', t:'a cup of tea', old:1 }, { k:'nap', n:'a lie-down', t:'a fifteen minute lie-down', old:1 }, { k:'light', n:'daylight', t:'ten minutes of daylight', old:1 },
  { k:'outside', n:'outside', t:'ten minutes outside', alt:'ten minutes somewhere else: another room, a different chair, a window', old:1 },
  { k:'warmth', n:'warmth (old)', t:'something warm: a drink, a blanket, a shower', old:1 }];
@@ -807,8 +807,9 @@ function tryPick(e){
  if (!expOn() || quietUntil() || e.e > 4) return null;
  var cut = Date.now() - 2 * 36e5; if (readLog().some(function(o){ return o.try && at(o) > cut; })) return null;
  var r; try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch(_){ r = Math.random(); }
- var pool = ARMS.filter(function(a){ return !a.old; }); pool.push(armOf('nothing'));
- return pool[Math.floor(r * pool.length)];
+ var pool = ARMS.filter(function(a){ return !a.old; }); pool.push(armOf('nothing'), armOf('silent'));
+ var pk = pool[Math.floor(r * pool.length)]; tryPick.p = +(pool.filter(function(a){ return a === pk; }).length / pool.length).toFixed(4);
+ return pk;
 }
 function trySet(t, k, v){ var x = readLog().filter(function(o){ return o.t === t; })[0]; if (!x || !x.try) return; x.try[k] = v; if (k === 'ok' && !v) x.try.did = 0; writeLog(readLog()); markDirty(); ghPush(1); }
 // one small card pinned to the bottom of the screen: it never moves the page
@@ -830,7 +831,7 @@ function tryCard(af, e, arm){
 }
 function paintTryAsk(){
  var log = readLog(), p = null;
- for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ var age = (Date.now() - at(e)) / 6e4; if (e.try.a !== 'nothing' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
+ for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ var age = (Date.now() - at(e)) / 6e4; if (e.try.a !== 'nothing' && e.try.a !== 'silent' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
  if (trayKind === 'saved') return;
  var tr = document.getElementById('tray');
  if (!p || !expOn() || askSkip === p.t){ if (trayKind === 'ask') trayHide(); return; }
@@ -859,7 +860,7 @@ document.getElementById('save').addEventListener('click', function(){
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
- var wh = whisper(d), arm = tryPick(e); if (arm) e.try = { a:arm.k };
+ var wh = whisper(d), arm = tryPick(e); if (arm) e.try = { a:arm.k, p:tryPick.p, v:3 };
  var a = readLog(); a.push(e); writeLog(a); this.disabled = true;
  var box = document.createElement('div'), h = '<span class="ok">saved.</span>';
  if (bc.indexOf('a long breath') >= 0 && !(arm && arm.k === 'breath')) h += '<a data-go="breath">breathe?</a>';
@@ -867,9 +868,9 @@ document.getElementById('save').addEventListener('click', function(){
  box.innerHTML = h;
  if (wh){ var ws = document.createElement('span'); ws.className = 'wh'; ws.textContent = wh; box.appendChild(ws); }
  var go = box.querySelector('a[data-go]'); if (go) go.addEventListener('click', function(){ trayHide(); breath.start(go.dataset.go); });
- if (arm) tryCard(box, e, arm);
+ if (arm && arm.k !== 'silent') tryCard(box, e, arm);
  // nothing moves on save: open lists and folds stay as they are, only the picks clear
- field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); trayShow('saved', box, arm && arm.k !== 'nothing' ? 0 : 8000);
+ field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); trayShow('saved', box, arm && arm.k !== 'nothing' && arm.k !== 'silent' ? 0 : 8000);
  markDirty(); ghPush(1);
 });
 function resetForm(){
@@ -1064,9 +1065,12 @@ function paintInsight(log){
  turns(up, nu, 'on the way up', css('--mint'), 'addChips'); turns(dn, nd, 'on the way down', css('--violet'), 'drainChips');
  var tr = {}, all = readLog(), any = 0; all.forEach(function(e, i){ if (!e.try || !armOf(e.try.a)) return; var o = tr[e.try.a] = tr[e.try.a] || { n:0, d:[] }, nx = all[i + 1]; o.n++; any++; if (nx){ var gap = (at(nx) - at(e)) / 36e5; if (gap >= .25 && gap <= 12) o.d.push(nx.e - e.e); } });
  if (any){ var er = '<h4 style="--c:' + css('--orchid') + '">the small experiment <small>· ' + any + ' so far</small></h4>';
+  var pl = { 'any suggestion':[], 'none':[] }; Object.keys(tr).forEach(function(k){ var g = k === 'nothing' || k === 'silent' ? 'none' : 'any suggestion'; pl[g] = pl[g].concat(tr[k].d); });
+  var sg = function(m){ return (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1); };
+  if (pl['any suggestion'].length && pl.none.length) er += '<p style="margin:0 0 8px">any suggestion <b>' + sg(mean(pl['any suggestion'])) + '</b> · none <b>' + sg(mean(pl.none)) + '</b></p>';
   ARMS.forEach(function(a){ var o = tr[a.k]; if (!o) return; var dd = ''; for (var j = 0; j < Math.min(o.n, 12); j++) dd += '<i style="--i:' + j + '"></i>'; var m = o.d.length ? mean(o.d) : null;
    er += '<div class="wr" style="--c:' + css('--orchid') + '"><span class="w">' + a.n + '</span><span class="tal">' + dd + (o.n > 12 ? '<em>+' + (o.n - 12) + '</em>' : '') + '</span><span class="at">' + o.n + '× · <b>' + (m === null ? '–' : (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1)) + '</b></span></div>'; });
-  H.push(er + '<p class="foot" style="margin-top:8px">after a low check-in, one is drawn at random. the number is the average change by the next check-in. too early to read until each has about thirty.</p>'); }
+  H.push(er + '<p class="foot" style="margin-top:8px">after a low check-in, one is drawn at random, and sometimes no card is shown at all. the number is the average change by the next check-in. the top line pools them and fills fastest. too early to read until each has about thirty.</p>'); }
  H.push('<p class="foot">last four weeks · ' + rec.length + ' check-ins. every dot is one. the number beside a word is the average energy when it was picked. tap a word to light it in the sky. counts only, no causes.</p>');
  box.innerHTML = H.join('');
  box.querySelectorAll('[data-w]').forEach(function(el){ el.addEventListener('click', function(){ var k = el.dataset.k, w = el.dataset.w; hl = (hl && hl.k === k && hl.w === w) ? null : { k:k, w:w }; paintHL(true); }); });
