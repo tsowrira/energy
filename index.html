@@ -28,48 +28,46 @@ body{ font:400 16px/1.55 var(--mono); padding:max(16px,env(safe-area-inset-top))
 #fieldBg{ position:fixed; inset:0; width:100%; height:100%; z-index:-1; opacity:0; pointer-events:none; transition:opacity 1.1s ease; } html.away #fieldBg{ opacity:.3; }
 canvas{ display:block; }
 .top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
-.when{ color:var(--mute); font-size:14px; letter-spacing:.04em; }
+.when{ color:var(--mute); font-size:14px; letter-spacing:.06em; }
 h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em; }
 .today{ display:block; height:30px; margin-top:6px; width:260px; }
 .sync{ position:relative; width:34px; height:34px; margin:4px -4px 0 0; cursor:pointer; flex:none; --sc:var(--mute); opacity:.5; }
 .sync svg.ring{ position:absolute; inset:0; width:34px; height:34px; animation:none; transform:rotate(-90deg); color:inherit; } .sync svg.ring circle{ fill:none; stroke-width:1; } #ringBg{ stroke:var(--line2); } #ringFg{ stroke:var(--sc); stroke-dasharray:94.2; stroke-dashoffset:94.2; transition:stroke-dashoffset .9s ease; stroke-linecap:round; }
 .sync svg{ position:absolute; left:8px; top:8px; width:18px; height:18px; color:var(--sc); animation:spin 14s linear infinite, twinkle 3.2s ease-in-out infinite; }
-.sync.on{ --sc:var(--mint); opacity:1; } .sync.wait{ --sc:var(--gold); opacity:1; } .sync.wait svg{ animation-duration:2s, .9s; } .sync.err{ --sc:var(--rose); opacity:1; }
+.sync::after{ content:''; position:absolute; inset:-6px; } .sync.on{ --sc:var(--mint); opacity:1; } .sync.wait{ --sc:var(--gold); opacity:1; } .sync.wait svg{ animation-duration:2s, .9s; } .sync.err{ --sc:var(--rose); opacity:1; }
 .sync i{ position:absolute; left:50%; top:50%; width:2px; height:2px; background:var(--sc); margin:-1px; animation:orbit 5s linear infinite; opacity:.8; } .sync i+i{ animation-delay:-2.5s; animation-duration:7s; }
 @keyframes twinkle{ 50%{ opacity:.5 } }
 @keyframes spin{ to{ transform:rotate(360deg) } }
 @keyframes orbit{ from{ transform:rotate(0) translateX(12px) } to{ transform:rotate(360deg) translateX(12px) } }
 
-.k{ color:var(--mute); font-size:13px; letter-spacing:.08em; margin:0 0 6px; }
+.k{ color:var(--mute); font-size:13px; letter-spacing:.06em; margin:0 0 6px; }
 .q{ font:italic 400 24px/1.25 var(--serif); margin:0 0 14px; color:var(--ink); }
 .hint{ color:var(--mute); font-size:14px; margin:-6px 0 14px; }
 
-.fieldWrap{ position:relative; width:100%; margin:0 0 2px; height:270px; touch-action:pan-y; cursor:pointer; }
+.fieldWrap{ position:relative; width:100%; margin:0 0 2px; height:236px; touch-action:pan-y; cursor:pointer; }
 #field{ width:100%; height:100%; }
 .mid{ display:none; }
 .num{ font:300 76px/1 var(--serif); color:var(--a); font-variant-numeric:tabular-nums; }
 .num.none{ color:var(--line); }
 .word{ text-align:center; font:italic 300 28px/1.3 var(--serif); color:var(--a, var(--mute)); min-height:38px; margin:-6px 0 8px; opacity:0; transform:translateY(4px); transition:opacity .5s ease, transform .5s ease, color .4s; }
 .word.show{ opacity:1; transform:none; }
-.whisper{ text-align:center; color:var(--mute); font-size:13px; letter-spacing:.04em; min-height:18px; margin:-4px 0 10px; opacity:0; transition:opacity 1.2s ease .3s; } .whisper.show{ opacity:.8; }
+.whisper{ text-align:center; color:var(--mute); font-size:13px; letter-spacing:.06em; min-height:18px; margin:-4px 0 10px; opacity:0; transition:opacity 1.2s ease .3s; } .whisper.show{ opacity:.8; }
 
 .dots{ position:relative; height:44px; margin:4px 0 0; touch-action:none; cursor:pointer; }
 .dots .rail{ position:absolute; left:0; right:0; top:21px; height:2px; background:var(--line); }
 .dots .fill{ position:absolute; left:0; top:21px; height:2px; width:0; background:var(--a); transition:width .12s; }
-.dots .thumb{ position:absolute; top:8px; left:0; width:28px; height:28px; margin-left:-14px; border-radius:50%; border:1.5px solid var(--orchid); background:var(--bg); transition:left .12s, transform .15s; box-sizing:border-box; }
+.dots .thumb{ position:absolute; top:6px; left:0; width:32px; height:32px; margin-left:-16px; border-radius:50%; border:2px solid var(--orchid); background:var(--bg); transition:left .12s, transform .15s; box-sizing:border-box; }
 .dots.set .thumb{ background:var(--a); border-color:var(--a); }
 
 .dots .tick{ position:absolute; top:20px; width:1px; height:4px; background:var(--line); }
 .ends{ display:flex; justify-content:space-between; color:var(--mute); font-size:13px; letter-spacing:.06em; margin:2px 0 0; }
 
-.sec{ margin-top:28px; }
+.sec{ margin-top:32px; } .sec .q{ font-size:20px; margin-bottom:12px; }
 .chip.more{ color:var(--mute); border-color:transparent; padding-left:4px; padding-right:4px; text-decoration:underline; text-underline-offset:4px; }
-.chip.own{ color:var(--mute); border-style:dashed; }
+.chip.own{ color:var(--mute); border-color:transparent; padding-left:4px; padding-right:4px; text-decoration:underline; text-underline-offset:4px; } .chip.own:has(input){ border-color:var(--line); padding:12px 14px; text-decoration:none; }
 .chip input{ background:none; border:0; outline:0; color:var(--ink); font:inherit; width:9em; padding:0; }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-.chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:var(--ink); line-height:1.2; user-select:none; cursor:pointer; }
-.sec .q::after{ content:''; display:block; width:28px; height:2px; margin-top:10px; background:var(--line2); }
-.drain .q::after{ background:var(--violet); } .add .q::after{ background:var(--mint); } .body .q::after{ background:var(--gold); }
+.chip{ padding:12px 14px; border:1px solid var(--line); border-radius:6px; font-size:15px; color:#cdc4e6; line-height:1.2; user-select:none; -webkit-user-select:none; cursor:pointer; }
 .chip{ transition:background .25s, border-color .25s, color .25s, transform .18s; } .chip:active{ transform:scale(.96); }
 .spark{ position:fixed; left:-7px; top:-7px; width:14px; height:14px; pointer-events:none; z-index:20; color:var(--sc); } .spark svg{ width:100%; height:100%; animation:spin var(--spd,2s) linear infinite; animation-direction:var(--dir,normal); filter:drop-shadow(0 0 3px var(--sc)); }
 .chip.pop{ animation:chipPop .55s cubic-bezier(.3,1.4,.5,1); } @keyframes chipPop{ 0%{ transform:scale(1); } 35%{ transform:scale(1.05); } 100%{ transform:scale(1); } }
@@ -81,31 +79,34 @@ textarea{ resize:none; min-height:48px; }
 textarea:focus,input:focus{ border-color:var(--orchid); }
 ::placeholder{ color:var(--mute); opacity:.8; }
 
-.save{ display:block; width:100%; margin:28px 0 10px; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
-.save:disabled{ background:var(--bg); color:var(--mute); border-color:var(--line); opacity:.45; }
-.after{ text-align:center; color:var(--mint); font-size:14px; min-height:22px; } .after a{ color:var(--orchid); text-decoration:underline; text-underline-offset:3px; margin-left:8px; cursor:pointer; }
-.calm{ text-align:center; margin-top:10px; font-size:14px; color:var(--mute); } .calm a{ display:inline-block; padding:12px 10px; color:var(--mute); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.save{ display:block; width:100%; margin:28px 0 10px; position:sticky; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:5; padding:17px; border:1px solid var(--a); border-radius:6px; background:var(--a); color:var(--a-ink); font:500 17px var(--mono); letter-spacing:.06em; cursor:pointer; }
+.save:disabled{ position:static; background:transparent; color:var(--mute); border-color:var(--line); opacity:.75; }
+.tray{ position:fixed; left:0; right:0; bottom:calc(12px + env(safe-area-inset-bottom)); margin:0 auto; width:calc(100% - 24px); max-width:496px; z-index:15; padding:14px 44px 14px 16px; border:1px solid var(--line); border-radius:6px; background:#120828; font-size:15px; line-height:1.5; opacity:0; transform:translateY(12px); pointer-events:none; transition:opacity .35s ease, transform .35s ease, bottom .2s; }
+.tray.show{ opacity:1; transform:none; pointer-events:auto; } body:has(#save:not(:disabled)) .tray{ bottom:calc(86px + env(safe-area-inset-bottom)); }
+.tray .ok{ color:var(--mint); } .tray a{ color:var(--orchid); text-decoration:underline; text-underline-offset:3px; cursor:pointer; } .tray .ok + a{ margin-left:10px; }
+#trayX{ position:absolute; top:0; right:0; width:44px; height:44px; background:none; border:0; color:var(--mute); font:inherit; font-size:18px; cursor:pointer; }
+.calm{ text-align:center; margin-top:4px; font-size:14px; color:var(--mute); } .calm a{ display:inline-block; padding:12px 10px; color:var(--mute); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .br{ position:fixed; inset:0; z-index:20; background:var(--bg); display:none; }
 .br.show{ display:block; }
 #brC{ position:absolute; inset:0; width:100%; height:100%; }
 .brWord{ position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center; font:italic 300 30px/1.2 var(--serif); color:var(--ink); pointer-events:none; }
 .brSub{ position:absolute; left:0; right:0; top:calc(50% + 30px); text-align:center; font-size:15px; letter-spacing:.3em; color:var(--mute); pointer-events:none; }
 .brSub b{ font-weight:400; opacity:.35; transition:opacity .2s, color .2s; } .brSub b.on{ opacity:1; color:var(--ink); }
-.brSub i{ display:block; font-style:normal; font-size:12px; letter-spacing:.08em; margin-top:14px; opacity:.6; }
+.brSub i{ display:block; font-style:normal; font-size:12px; letter-spacing:.06em; margin-top:14px; opacity:.6; }
 .brX{ position:absolute; left:0; right:0; bottom:calc(30px + env(safe-area-inset-bottom)); text-align:center; font-size:14px; color:var(--mute); }
-.fold{ margin-top:22px; border-top:1px solid var(--line2); } .fold.cyc{ margin-top:0; }
-.fold summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:12px 0; font-size:14px; }
+.fold{ margin-top:22px; } .fold.cyc{ margin-top:0; } #insFold{ border-top:1px solid var(--line2); }
+.fold summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:14px 0; font-size:14px; }
 .fold summary::-webkit-details-marker{ display:none; } .fold summary em{ font-style:normal; color:var(--orchid); }
-.fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:10px 0 6px; }
+.fold .k2{ color:var(--mute); font-size:12px; letter-spacing:.06em; margin:10px 0 6px; }
 .cyc .chip.on{ background:rgba(255,110,156,.16); border-color:var(--rose); color:var(--ink); }
 
 .sky{ margin-top:40px; }
 .nav{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
-.nav button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:14px; padding:8px 0; cursor:pointer; }
+.nav button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:14px; padding:8px 0; min-height:44px; cursor:pointer; }
 .nav button:disabled{ opacity:.3; }
 .nav .ttl{ font:italic 400 20px var(--serif); }
 #skyC{ width:100%; height:auto; touch-action:pan-y; }
-.cap{ font:italic 300 17px/1.45 var(--serif); color:var(--mute); margin:12px 0 0; }
+.cap{ font:italic 300 16px/1.45 var(--serif); color:var(--mute); margin:8px 0 0; } .sky:has(.note.show) .cap{ display:none; }
 .note{ margin-top:14px; padding:14px; border:1px solid var(--line); border-radius:6px; font-size:15px; line-height:1.6; display:none; }
 .note.show{ display:block; }
 .note b{ font-weight:500; color:var(--orchid); }
@@ -114,35 +115,34 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .insight b{ font-weight:500; color:var(--mint); }
 .insight .lead{ font:italic 300 21px/1.35 var(--serif); margin:6px 0 18px; } .insight .lead b{ font-weight:300; }
 .insight svg{ display:block; width:100%; height:auto; overflow:visible; }
-.insight svg text{ font-family:var(--mono); } .insight .ax{ fill:var(--mute); font-size:9.5px; } .insight .num{ fill:var(--ink); font-size:10px; }
+.insight svg text{ font-family:var(--mono); } .insight .ax{ fill:var(--mute); font-size:10.5px; } .insight .num{ fill:var(--ink); font-size:10.5px; }
 .insight .thr{ fill:none; stroke:var(--orchid); stroke-width:1; stroke-dasharray:2 4; stroke-linecap:round; opacity:.55; }
 .insight .pt{ animation:insPt .7s ease-out both; animation-delay:calc(var(--i) * 22ms); } .insight .mn{ animation:insMn .8s cubic-bezier(.2,.9,.3,1.3) both; animation-delay:calc(260ms + var(--i) * 90ms); transform-box:fill-box; transform-origin:center; }
-.insight h4{ font:inherit; color:var(--mute); font-size:12px; letter-spacing:.08em; margin:26px 0 8px; display:flex; align-items:center; gap:8px; } .insight h4::before{ content:''; width:14px; height:2px; background:var(--c); }
+.insight h4{ font:inherit; color:var(--mute); font-size:12px; letter-spacing:.06em; margin:26px 0 8px; display:flex; align-items:center; gap:8px; } .insight h4::before{ content:''; width:14px; height:2px; background:var(--c); }
 .insight .wr{ display:grid; grid-template-columns:minmax(0,36%) 1fr auto; gap:10px; align-items:center; padding:4px 0; font-size:14px; }
 .insight .wr .w{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .insight .wr .tal{ display:flex; flex-wrap:nowrap; gap:3.5px; align-items:center; }
-.insight .wr .tal i{ flex:none; width:5.5px; height:5.5px; border-radius:50%; background:var(--c); animation:insPt .6s ease-out both; animation-delay:calc(var(--i) * 45ms); } .insight .wr .tal em{ font-style:normal; color:var(--mute); font-size:11px; }
+.insight .wr .tal i{ flex:none; width:5.5px; height:5.5px; border-radius:50%; background:var(--c); animation:insPt .6s ease-out both; animation-delay:calc(var(--i) * 45ms); } .insight .wr .tal em{ font-style:normal; color:var(--mute); font-size:12px; }
 .insight .wr .at{ font-size:12px; color:var(--mute); white-space:nowrap; } .insight .wr .at b{ font-weight:400; }
 .insight .foot{ color:var(--mute); font-size:12px; line-height:1.6; margin:22px 0 0; }
 .insight [data-w]{ cursor:pointer; -webkit-tap-highlight-color:transparent; transition:opacity .3s; } .insight.has [data-w]:not(.on){ opacity:.4; }
 .insight .wr{ border-radius:6px; margin:0 -6px; padding-left:6px; padding-right:6px; } .insight .wr.on{ background:rgba(189,166,255,.08); }
-.insight .pls{ display:flex; flex-wrap:wrap; gap:6px; } .insight .pl{ border:1px solid var(--c); border-radius:999px; padding:3px 10px; font-size:13px; background:none; color:var(--ink); font-family:inherit; } .insight .pl em{ font-style:normal; color:var(--mute); font-size:11px; margin-left:4px; } .insight .pl.on{ background:rgba(189,166,255,.14); }
-.insight h4 small{ font-size:11px; letter-spacing:0; opacity:.8; white-space:nowrap; }
-.skyBar{ display:flex; justify-content:space-between; align-items:center; gap:10px; min-height:34px; margin-top:4px; }
-.skyBar button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:13px; padding:8px 0; cursor:pointer; } #hlBar{ border:1px solid var(--c, var(--line)); border-radius:999px; padding:4px 12px; color:var(--ink); } #hlBar i{ font-style:normal; color:var(--mute); margin-left:8px; } #skyPlay{ margin-left:auto; }
-.ribbon{ margin-top:22px; } .ribbon p{ color:var(--mute); font-size:12px; letter-spacing:.08em; margin:0 0 8px; } .ribbon svg{ display:block; width:100%; height:auto; overflow:visible; cursor:pointer; } .ribbon text{ font-family:var(--mono); font-size:8.5px; fill:var(--mute); }
-.after .wh{ display:block; font:italic 300 16px/1.4 var(--serif); color:var(--mute); margin-top:4px; animation:whIn 1.2s ease both .3s; } @keyframes whIn{ from{ opacity:0; transform:translateY(4px); } }
-.try{ margin:14px auto 0; max-width:320px; padding:14px; border:1px solid var(--line); border-radius:6px; color:var(--ink); font-size:15px; line-height:1.5; text-align:left; animation:whIn .9s ease both .5s; }
-.try span{ display:block; color:var(--mute); font-size:12px; letter-spacing:.08em; margin-bottom:6px; } .try div{ display:flex; gap:8px; margin-top:12px; }
-.try button{ flex:1; padding:10px; border:1px solid var(--line); border-radius:999px; background:none; color:var(--ink); font:inherit; font-size:14px; cursor:pointer; } .try button:first-child{ border-color:var(--orchid); }
-#tryAsk:empty{ display:none; } #tryAsk .try{ margin:0 0 26px; max-width:none; animation:none; }
+.insight .pls{ display:flex; flex-wrap:wrap; gap:6px; } .insight .pl{ border:1px solid var(--c); border-radius:999px; padding:3px 10px; font-size:13px; background:none; color:var(--ink); font-family:inherit; } .insight .pl em{ font-style:normal; color:var(--mute); font-size:12px; margin-left:4px; } .insight .pl.on{ background:rgba(189,166,255,.14); }
+.insight h4 small{ font-size:12px; letter-spacing:0; opacity:.8; white-space:nowrap; }
+.skyBar{ display:flex; justify-content:space-between; align-items:center; gap:10px; min-height:44px; margin-top:2px; }
+.skyBar button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:13px; padding:8px 0; min-height:44px; cursor:pointer; } #hlBar{ border:1px solid var(--c, var(--line)); border-radius:999px; padding:4px 12px; min-height:0; color:var(--ink); } #hlBar i{ font-style:normal; color:var(--mute); margin-left:8px; } #skyPlay{ margin-left:auto; }
+.ribbon{ margin-top:22px; } .ribbon p{ color:var(--mute); font-size:12px; letter-spacing:.06em; margin:0 0 8px; } .ribbon svg{ display:block; width:100%; height:auto; overflow:visible; cursor:pointer; } .ribbon text{ font-family:var(--mono); font-size:9.5px; fill:var(--mute); }
+.tray .wh{ display:block; font:italic 300 16px/1.4 var(--serif); color:var(--mute); margin-top:4px; } @keyframes whIn{ from{ opacity:0; transform:translateY(4px); } }
+.try{ margin-top:12px; color:var(--ink); } .try:first-child{ margin-top:0; } .try p{ margin:0; } .try > a{ display:inline-block; padding:12px 0 0; font-size:13px; }
+.try span{ display:block; color:var(--mute); font-size:12px; letter-spacing:.06em; margin-bottom:6px; } .try div{ display:flex; gap:8px; margin-top:12px; }
+.try button{ flex:1; padding:11px; border:1px solid var(--line); border-radius:999px; background:none; color:var(--ink); font:inherit; font-size:14px; cursor:pointer; } .try button:first-child{ border-color:var(--orchid); }
 .note a.card{ display:inline-block; margin-top:10px; color:var(--orchid); font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 @keyframes insPt{ from{ opacity:0; transform:scale(.2); } } @keyframes insMn{ from{ opacity:0; transform:translateY(8px) scale(.4) rotate(-40deg); } }
 @media (prefers-reduced-motion:reduce){ .insight .pt, .insight .mn, .insight .wr .tal i{ animation:none; } }
 
-html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ margin-top:22px; border-top:1px solid var(--line2); }
+html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ margin-top:22px; }
 .glance{ color:var(--mute); font-size:12.5px; line-height:1.7; margin:10px 0 0; min-height:0; } .glance b{ color:var(--ink); font-weight:400; }
-.gh{ margin-top:52px; border-top:1px solid var(--line); padding-top:14px; font-size:15px; }
-.gh summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:8px 0; }
+.gh{ margin-top:16px; border-top:1px solid var(--line2); font-size:15px; }
+.gh summary{ cursor:pointer; color:var(--mute); list-style:none; display:flex; justify-content:space-between; padding:14px 0; font-size:14px; }
 .gh summary::-webkit-details-marker{ display:none; }
 .gh summary em{ font-style:normal; color:var(--orchid); }
 .gh p{ color:var(--mute); line-height:1.6; }
@@ -150,7 +150,7 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
 .gh .row{ display:flex; gap:8px; margin-top:12px; }
 .gh .row button{ flex:1; padding:12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--ink); font:inherit; font-size:15px; cursor:pointer; }
 .gh .st{ color:var(--mute); font-size:13px; margin-top:12px; word-break:break-all; }
-.toast{ position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:11px 18px; border-radius:6px; font-size:15px; opacity:0; pointer-events:none; transition:.18s; white-space:nowrap; }
+.toast{ position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:11px 18px; border-radius:6px; font-size:15px; opacity:0; pointer-events:none; transition:.18s; white-space:nowrap; z-index:30; }
 .toast.show{ opacity:1; transform:translateX(-50%); }
 </style>
 </head>
@@ -163,7 +163,6 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <div class="sync" id="syncDot"><svg class="ring" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" id="ringBg"/><circle cx="17" cy="17" r="15" id="ringFg"/></svg><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 L12.4 7.6 L18.9 7.9 L13.8 12 L15.5 18.3 L10 14.8 L4.5 18.3 L6.2 12 L1.1 7.9 L7.6 7.6 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.6 2.2" stroke-linecap="round"/></svg><i></i><i></i></div>
 </div>
 
-<div id="tryAsk"></div>
 <p class="q">how much energy is in you right now?</p>
 <div class="fieldWrap" id="fieldWrap">
  <canvas id="field" aria-hidden="true"></canvas>
@@ -201,7 +200,6 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
 </details>
 
 <button class="save" id="save" disabled>save</button>
-<div class="after" id="after"></div>
 <div class="calm"><a id="goBreath">breathe</a>·<a id="goStill">a minute of nothing</a></div>
 <div class="br" id="br"><canvas id="brC"></canvas><div class="brWord" id="brWord"></div><div class="brSub" id="brSub"></div><div class="brX">tap anywhere to stop</div></div>
 
@@ -210,7 +208,7 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <div class="nav"><button id="prev">‹ earlier</button><div class="ttl" id="skyTtl"></div><button id="next" disabled>later ›</button></div>
  <canvas id="skyC"></canvas>
  <div class="skyBar"><button id="hlBar" type="button" hidden></button><button id="skyPlay" type="button">▸ play the month</button></div>
- <p class="cap" id="cap">four weeks folded by the hour. midnight at the top, every point a check-in, as many or as few as you like. each day its own small constellation.</p>
+ <p class="cap" id="cap">four weeks, folded by the hour. midnight at the top, every point a check-in.</p>
  <div class="note" id="note"></div>
  <p class="glance" id="glance"></p>
  <div class="ribbon" id="ribbon"></div>
@@ -230,6 +228,7 @@ html.quiet .sec, html.quiet #noteFold{ display:none; } html.quiet .fold.cyc{ mar
  <div class="st" id="ghNote"></div>
 </details>
 
+<div class="tray" id="tray" role="status"><div id="trayIn"></div><button id="trayX" type="button" aria-label="close">×</button></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -571,12 +570,12 @@ function learned(kind){
  return Object.keys(cnt).filter(function(w){ return START[kind].indexOf(w) < 0 && (cnt[w] >= 2 || last[w] >= week); }).sort(function(a,b){ return cnt[b] - cnt[a] || (last[b] > last[a] ? 1 : -1); }).slice(0, 4);
 }
 function usage(kind){ var cnt = {}; readLog().forEach(function(e){ (e[kind + 'Chips'] || []).forEach(function(w){ cnt[w] = (cnt[w] || 0) + 1; }); }); return cnt; }
-var openKinds = {}, ownOpen = {}, own = { drain:[], add:[], body:[] };
+var openKinds = {}, ownOpen = {}, own = { drain:[], add:[], body:[] }, chipOrd = {};
 function paintChips(){
  ['drain','add','body'].forEach(function(kind){
   var box = document.getElementById(kind + 'Chips'), on = {};
   Array.prototype.forEach.call(box.querySelectorAll('.chip.on'), function(c){ on[c.dataset.w] = 1; });
-  var cnt = tally(kind).cnt, list = START[kind].concat(learned(kind)).map(function(w, i){ return { w:w, i:i, n:cnt[w] || 0 }; }).sort(function(a, b){ return b.n - a.n || a.i - b.i; }).map(function(o){ return o.w; }), full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
+  var cnt = tally(kind).cnt, list = START[kind].concat(learned(kind)).map(function(w, i){ return { w:w, i:i, n:cnt[w] || 0 }; }).sort(function(a, b){ return b.n - a.n || a.i - b.i; }).map(function(o){ return o.w; }); if (chipOrd[kind]) list = chipOrd[kind].concat(list.filter(function(w){ return chipOrd[kind].indexOf(w) < 0; })); else chipOrd[kind] = list; var full = openKinds[kind] || Object.keys(on).some(function(w){ return list.indexOf(w) >= 6; });
   var show = (full ? list : list.slice(0, 6)).concat(own[kind].filter(function(w){ return list.indexOf(w) < 0; }));
   var h = show.map(function(w){ return '<span class="chip' + (on[w] ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
   if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
@@ -781,7 +780,7 @@ paintQuiet();
 // After a low check-in one option is drawn at random, 'nothing' included, and
 // kept on the entry whether or not it is taken up. The comparison is by what
 // was drawn, never by what was done, so picking on good days cannot tilt it.
-var ARMS = [{ k:'outside', n:'outside', t:'ten minutes outside' }, { k:'breath', n:'a long breath', t:'a minute of long slow breaths' }, { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower' }, { k:'nothing', n:'nothing', t:'' }];
+var ARMS = [{ k:'outside', n:'outside', t:'ten minutes outside', alt:'ten minutes by a window, in the daylight', altQ:'too cold or wet out?' }, { k:'breath', n:'a long breath', t:'a minute of long slow breaths' }, { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower' }, { k:'nothing', n:'nothing', t:'' }];
 function armOf(k){ return ARMS.filter(function(a){ return a.k === k; })[0]; }
 function expOn(){ return store.get('en-exp') !== '0'; }
 function tryPick(e){
@@ -791,22 +790,34 @@ function tryPick(e){
  return ARMS[Math.floor(r * ARMS.length)];
 }
 function trySet(t, k, v){ var x = readLog().filter(function(o){ return o.t === t; })[0]; if (!x || !x.try) return; x.try[k] = v; if (k === 'ok' && !v) x.try.did = 0; writeLog(readLog()); markDirty(); ghPush(1); }
+// one small card pinned to the bottom of the screen: it never moves the page
+var trayT = 0, trayKind = '', askSkip = '';
+function trayShow(kind, node, ms){ var t = document.getElementById('tray'), b = document.getElementById('trayIn'); clearTimeout(trayT); b.innerHTML = ''; b.appendChild(node); trayKind = kind; t.classList.add('show'); if (ms) trayT = setTimeout(trayHide, ms); }
+function trayHide(){ clearTimeout(trayT); trayKind = ''; document.getElementById('tray').classList.remove('show'); }
+document.getElementById('trayX').addEventListener('click', function(){ if (trayKind === 'ask') askSkip = document.getElementById('tray').dataset.t || ''; trayHide(); });
+function tryText(tr){ var a = armOf(tr.a); return tr.alt && a.alt ? a.alt : a.t; }
 function tryCard(af, e, arm){
- var d = document.createElement('div'); d.className = 'try';
- if (arm.k === 'nothing'){ d.innerHTML = '<span>a small experiment</span>this time, nothing. carry on as you are.'; af.appendChild(d); return; }
- d.innerHTML = '<span>a small experiment</span>try ' + arm.t + '?<div><button type="button">ok</button><button type="button">not now</button></div>';
- af.appendChild(d); var bs = d.querySelectorAll('button');
- bs[0].addEventListener('click', function(){ trySet(e.t, 'ok', 1); d.querySelector('div').remove(); if (arm.k === 'breath') breath.start('breath'); });
- bs[1].addEventListener('click', function(){ trySet(e.t, 'ok', 0); d.remove(); });
+ var d = document.createElement('div'), hd = '<span>a small experiment</span>'; d.className = 'try';
+ if (arm.k === 'nothing'){ d.innerHTML = hd + 'this time, nothing. carry on as you are.'; af.appendChild(d); return; }
+ d.innerHTML = hd + '<p>try ' + arm.t + '?</p><div><button type="button">ok</button><button type="button">not now</button></div>' + (arm.alt ? '<a>' + arm.altQ + '</a>' : '');
+ af.appendChild(d); var bs = d.querySelectorAll('button'), al = d.querySelector('a');
+ var done = function(m){ d.innerHTML = hd + m; clearTimeout(trayT); trayT = setTimeout(trayHide, 2600); };
+ bs[0].addEventListener('click', function(){ trySet(e.t, 'ok', 1); if (arm.k === 'breath'){ trayHide(); breath.start('breath'); } else done('good. no rush.'); });
+ bs[1].addEventListener('click', function(){ trySet(e.t, 'ok', 0); done('skipped. that is fine.'); });
+ if (al) al.addEventListener('click', function(){ trySet(e.t, 'alt', 1); d.querySelector('p').textContent = 'then ' + arm.alt + '?'; al.remove(); });
 }
 function paintTryAsk(){
- var box = document.getElementById('tryAsk'), log = readLog(), p = null;
- for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try){ var age = (Date.now() - new Date(e.t)) / 6e4; if (e.try.a !== 'nothing' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
- if (!p || !expOn()){ box.innerHTML = ''; return; }
- if (box.dataset.t === p.t && box.firstChild) return; box.dataset.t = p.t;
- box.innerHTML = '<div class="try"><span>earlier</span>' + armOf(p.try.a).t + '. did it happen?<div><button type="button">yes</button><button type="button">no</button></div></div>';
- var bs = box.querySelectorAll('button'), t = p.t;
- bs[0].addEventListener('click', function(){ trySet(t, 'did', 1); box.innerHTML = ''; }); bs[1].addEventListener('click', function(){ trySet(t, 'did', 0); box.innerHTML = ''; });
+ var log = readLog(), p = null;
+ for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ var age = (Date.now() - new Date(e.t)) / 6e4; if (e.try.a !== 'nothing' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
+ if (trayKind === 'saved') return;
+ var tr = document.getElementById('tray');
+ if (!p || !expOn() || askSkip === p.t){ if (trayKind === 'ask') trayHide(); return; }
+ if (trayKind === 'ask' && tr.dataset.t === p.t) return;
+ var d = document.createElement('div'), t = p.t; d.className = 'try';
+ d.innerHTML = '<span>earlier</span>' + tryText(p.try) + '. did it happen?<div><button type="button">yes</button><button type="button">no</button></div>';
+ var bs = d.querySelectorAll('button');
+ bs[0].addEventListener('click', function(){ trySet(t, 'did', 1); trayHide(); }); bs[1].addEventListener('click', function(){ trySet(t, 'did', 0); trayHide(); });
+ tr.dataset.t = t; trayShow('ask', d, 0);
 }
 function paintExp(){ document.getElementById('expBtn').textContent = expOn() ? 'Experiment on' : 'Experiment off'; }
 document.getElementById('expBtn').addEventListener('click', function(){ store.set('en-exp', expOn() ? '0' : '1'); paintExp(); paintTryAsk(); toast(expOn() ? 'after a low check-in, one small thing at random' : 'experiment paused'); });
@@ -827,17 +838,17 @@ document.getElementById('save').addEventListener('click', function(){
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
  var wh = whisper(d), arm = tryPick(e); if (arm) e.try = { a:arm.k };
- var a = readLog(); a.push(e); writeLog(a);
- field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky();
- var af = document.getElementById('after');
- if (arm) af.textContent = 'saved.';
- else if (bc.indexOf('a long breath') >= 0) af.innerHTML = 'saved.<a id="afBreath">breathe?</a>';
- else if (bc.indexOf('slow down') >= 0) af.innerHTML = 'saved.<a id="afStill">a minute of nothing?</a>';
- else af.textContent = 'saved.';
- if (wh){ var ws = document.createElement('span'); ws.className = 'wh'; ws.textContent = wh; af.appendChild(ws); }
- if (arm) tryCard(af, e, arm);
- var ab = document.getElementById('afBreath'), as = document.getElementById('afStill');
- if (ab) ab.addEventListener('click', function(){ breath.start('breath'); }); if (as) as.addEventListener('click', function(){ breath.start('still'); });
+ var a = readLog(); a.push(e); writeLog(a); this.disabled = true;
+ var box = document.createElement('div'), h = '<span class="ok">saved.</span>';
+ if (bc.indexOf('a long breath') >= 0 && !(arm && arm.k === 'breath')) h += '<a data-go="breath">breathe?</a>';
+ else if (bc.indexOf('slow down') >= 0) h += '<a data-go="still">a minute of nothing?</a>';
+ box.innerHTML = h;
+ if (wh){ var ws = document.createElement('span'); ws.className = 'wh'; ws.textContent = wh; box.appendChild(ws); }
+ var go = box.querySelector('a[data-go]'); if (go) go.addEventListener('click', function(){ trayHide(); breath.start(go.dataset.go); });
+ if (arm) tryCard(box, e, arm);
+ // glide to the top first, then tidy the form where the tidying cannot be seen
+ var fin = function(){ field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); trayShow('saved', box, arm && arm.k !== 'nothing' ? 0 : 8000); };
+ if (window.scrollY < 4) fin(); else { var t0 = performance.now(); window.scrollTo({ top:0, behavior:'smooth' }); (function w(){ if (window.scrollY < 4 || performance.now() - t0 > 1400) fin(); else requestAnimationFrame(w); })(); }
  markDirty(); ghPush(1);
 });
 function resetForm(){
@@ -1078,11 +1089,13 @@ function ghErr(c, m){ c.err = m; writeGH(c); paintGH(); }
 var dirtySeq = 0;
 function markDirty(){ dirtySeq++; store.set('en-dirty', String(dirtySeq)); }
 function okEntry(e){ return e && typeof e.t === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(e.t) && typeof e.e === 'number'; }
+function strays(){ try { var a = JSON.parse(store.get('en-stray') || '[]'); return Array.isArray(a) ? a : []; } catch(_){ return []; } }
 function merge(remote){
- var loc = readLog(), seen = {}, added = 0; loc.forEach(function(e){ seen[e.t] = e; });
- (Array.isArray(remote) ? remote : []).forEach(function(e){ if (!okEntry(e)) return; var m = seen[e.t];
+ var loc = readLog(), seen = {}, added = 0, st = []; loc.forEach(function(e){ seen[e.t] = e; });
+ (Array.isArray(remote) ? remote : []).forEach(function(e){ if (!okEntry(e)){ st.push(e); return; } var m = seen[e.t];
   if (!m){ loc.push(e); seen[e.t] = e; added++; }
-  else if (e.try && m.try && e.try.a === m.try.a){ ['ok', 'did'].forEach(function(k){ if (m.try[k] == null && e.try[k] != null){ m.try[k] = e.try[k]; added++; } }); } });
+  else if (e.try && m.try && e.try.a === m.try.a){ ['ok', 'did', 'alt'].forEach(function(k){ if (m.try[k] == null && e.try[k] != null){ m.try[k] = e.try[k]; added++; } }); } });
+ if (Array.isArray(remote)){ if (st.length) store.set('en-stray', JSON.stringify(st)); else store.del('en-stray'); }
  if (added) writeLog(loc); return added;
 }
 function ghPull(quiet){
@@ -1104,7 +1117,7 @@ var busy = null;
 function ghPush(quiet, retried){
  var c = readGH(); if (!c) return Promise.resolve(false);
  if (busy && !retried) return busy;
- var body = JSON.stringify(readLog()), seq = dirtySeq;
+ var body = JSON.stringify(readLog().concat(strays())), seq = dirtySeq;
  var p = fetch(ghUrl(c), { method:'PUT', headers:ghHead(c), keepalive:body.length < 50000, body:JSON.stringify({ message:'log', content:b64enc(body), sha:c.sha }) }).then(function(r){
   if ((r.status === 409 || r.status === 422) && !retried) return ghPull(1).then(function(){ return ghPush(quiet, 1); });
   if (r.status === 404) throw new Error(no404(c));
@@ -1124,7 +1137,7 @@ function flush(){ var c = readGH(); if (c && store.get('en-dirty') && !c.err) gh
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flush(); else { paintHead(); paintDial(); paintSky(); ghPull(1).then(flush); } });
 // the clock moves on without a save: the day name and slot follow it
 var _hk = todayStr() + slotFor(new Date());
-setInterval(function(){ if (document.hidden) return; var k = todayStr() + slotFor(new Date()); if (k !== _hk){ _hk = k; paintHead(); paintCyc(); paintSky(); } }, 60000);
+setInterval(function(){ if (document.hidden) return; var k = todayStr() + slotFor(new Date()); if (k !== _hk){ _hk = k; paintHead(); paintCyc(); paintSky(); } else paintTryAsk(); }, 60000);
 document.getElementById('syncDot').addEventListener('click', function(){ var b = document.getElementById('ghBox'); b.open = true; b.scrollIntoView({ behavior:'smooth' }); });
 window.addEventListener('pagehide', flush);
 window.addEventListener('online', flush);
