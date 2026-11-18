@@ -343,9 +343,9 @@ var strip = (function(){
   raf = 0; if (document.hidden) return;
   x.clearRect(0, 0, W, H);
   list.forEach(function(s, i){
-   var gap = Math.min(30, (W - 24) / Math.max(1, list.length - 1)), cx = 12 + i * gap, cy = H / 2, tw = .7 + .3 * Math.sin(now / 700 + s.ph), col = s.col;
+   var gap = Math.min(30, (W - 24) / Math.max(1, list.length - 1)), cx = 12 + i * gap, cy = H / 2, tw = .8 + .2 * Math.sin(now / 700 + s.ph), lift = s.e < 4 ? .6 : .12, col = s.col.map(function(v){ return Math.round(v + (240 - v) * lift); });
    // the core: a four-point star, bigger with more energy
-   var r = 5 + s.e * .5;
+   var r = 7 + s.e * .3;
    dotStar(x, cx, cy, r, now / 9000 + s.ph, 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')', tw);
    // satellites: one spark per thing that was logged with it, slowly orbiting
    for (var k = 0; k < s.n; k++){ var a = now / 2400 * (1 + k * .13) + s.ph + k * 2.1, rr = 6 + (k % 3) * 1.8; x.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + (.35 + .4 * tw).toFixed(2) + ')'; x.fillRect(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .5, 1.5, 1.5); }
@@ -785,14 +785,25 @@ paintQuiet();
 // After a low check-in one option is drawn at random, 'nothing' included, and
 // kept on the entry whether or not it is taken up. The comparison is by what
 // was drawn, never by what was done, so picking on good days cannot tilt it.
-var ARMS = [{ k:'outside', n:'outside', t:'ten minutes outside', alt:'ten minutes somewhere else: another room, a different chair, a window', altQ:'too cold, wet or dark out?' }, { k:'breath', n:'a long breath', t:'a minute of long slow breaths' }, { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower' }, { k:'nothing', n:'nothing', t:'' }];
+// on(h): the hours an option can be drawn. old: kept only so earlier draws still read.
+var ARMS = [
+ { k:'walk', n:'a slow walk', t:'walk slowly for ten minutes, outside if you can', alt:'walk slowly indoors, room to room, for ten minutes', altQ:'too cold, wet or dark out?' },
+ { k:'tea', n:'tea', t:'make one cup of tea or a small coffee', alt:'drink one full glass of water', altQ:'had enough caffeine today?', on:function(h){ return h >= 6 && h < 14; } },
+ { k:'nap', n:'a lie-down', t:'lie down with an alarm set for fifteen minutes', alt:'sit back, eyes closed, alarm for ten minutes', altQ:'nowhere to lie down?', on:function(h){ return h >= 11 && h < 15; } },
+ { k:'light', n:'daylight', t:'sit by a bright window, or step outside, for ten minutes', on:function(h){ return h >= 8 && h < 16; } },
+ { k:'breath', n:'slow sighs', t:'breathe in twice, then one long sigh out. keep going for five minutes' },
+ { k:'music', n:'a song', t:'play one or two upbeat songs you love, and just listen' },
+ { k:'nothing', n:'nothing', t:'' },
+ { k:'outside', n:'outside', t:'ten minutes outside', alt:'ten minutes somewhere else: another room, a different chair, a window', old:1 },
+ { k:'warmth', n:'warmth', t:'something warm: a drink, a blanket, a shower', old:1 }];
 function armOf(k){ return ARMS.filter(function(a){ return a.k === k; })[0]; }
 function expOn(){ return store.get('en-exp') !== '0'; }
 function tryPick(e){
  if (!expOn() || quietUntil() || e.e > 4) return null;
  var cut = Date.now() - 4 * 36e5; if (readLog().some(function(o){ return o.try && at(o) > cut; })) return null;
  var r; try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch(_){ r = Math.random(); }
- return ARMS[Math.floor(r * ARMS.length)];
+ var h = new Date().getHours(), pool = ARMS.filter(function(a){ return !a.old && (!a.on || a.on(h)); }); pool.push(armOf('nothing'));
+ return pool[Math.floor(r * pool.length)];
 }
 function trySet(t, k, v){ var x = readLog().filter(function(o){ return o.t === t; })[0]; if (!x || !x.try) return; x.try[k] = v; if (k === 'ok' && !v) x.try.did = 0; writeLog(readLog()); markDirty(); ghPush(1); }
 // one small card pinned to the bottom of the screen: it never moves the page
@@ -805,12 +816,12 @@ function tryText(tr){ var a = armOf(tr.a); return tr.alt && a.alt ? a.alt : a.t;
 function tryCard(af, e, arm){
  var d = document.createElement('div'), hd = '<span>a small experiment</span>'; d.className = 'try';
  if (arm.k === 'nothing'){ d.innerHTML = hd + 'this time, nothing. carry on as you are.'; af.appendChild(d); return; }
- d.innerHTML = hd + '<p>try ' + arm.t + '?</p><div><button type="button">ok</button><button type="button">not now</button></div>' + (arm.alt ? '<a>' + arm.altQ + '</a>' : '');
+ d.innerHTML = hd + '<p>' + arm.t + '.</p><div><button type="button">ok</button><button type="button">not now</button></div>' + (arm.alt ? '<a>' + arm.altQ + '</a>' : '');
  af.appendChild(d); var bs = d.querySelectorAll('button'), al = d.querySelector('a');
  var done = function(m){ d.innerHTML = hd + m; clearTimeout(trayT); trayT = setTimeout(trayHide, 2600); };
- bs[0].addEventListener('click', function(){ trySet(e.t, 'ok', 1); if (arm.k === 'breath'){ trayHide(); breath.start('breath'); } else done('good. no rush.'); });
+ bs[0].addEventListener('click', function(){ trySet(e.t, 'ok', 1); done('good. no rush.'); });
  bs[1].addEventListener('click', function(){ trySet(e.t, 'ok', 0); done('skipped. that is fine.'); });
- if (al) al.addEventListener('click', function(){ trySet(e.t, 'alt', 1); d.querySelector('p').textContent = 'then ' + arm.alt + '?'; al.remove(); });
+ if (al) al.addEventListener('click', function(){ trySet(e.t, 'alt', 1); d.querySelector('p').textContent = 'then ' + arm.alt + '.'; al.remove(); });
 }
 function paintTryAsk(){
  var log = readLog(), p = null;
@@ -1050,7 +1061,7 @@ function paintInsight(log){
  if (any){ var er = '<h4 style="--c:' + css('--orchid') + '">the small experiment <small>· ' + any + ' so far</small></h4>';
   ARMS.forEach(function(a){ var o = tr[a.k]; if (!o) return; var dd = ''; for (var j = 0; j < Math.min(o.n, 12); j++) dd += '<i style="--i:' + j + '"></i>'; var m = o.d.length ? mean(o.d) : null;
    er += '<div class="wr" style="--c:' + css('--orchid') + '"><span class="w">' + a.n + '</span><span class="tal">' + dd + (o.n > 12 ? '<em>+' + (o.n - 12) + '</em>' : '') + '</span><span class="at">' + o.n + '× · <b>' + (m === null ? '–' : (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1)) + '</b></span></div>'; });
-  H.push(er + '<p class="foot" style="margin-top:8px">after a low check-in, one is drawn at random. the number is the average change by the next check-in. too early to read until each has about fifteen.</p>'); }
+  H.push(er + '<p class="foot" style="margin-top:8px">after a low check-in, one is drawn at random. the number is the average change by the next check-in. too early to read until each has about thirty.</p>'); }
  H.push('<p class="foot">last four weeks · ' + rec.length + ' check-ins. every dot is one. the number beside a word is the average energy when it was picked. tap a word to light it in the sky. counts only, no causes.</p>');
  box.innerHTML = H.join('');
  box.querySelectorAll('[data-w]').forEach(function(el){ el.addEventListener('click', function(){ var k = el.dataset.k, w = el.dataset.w; hl = (hl && hl.k === k && hl.w === w) ? null : { k:k, w:w }; paintHL(true); }); });
