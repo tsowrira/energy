@@ -133,7 +133,7 @@ textarea:focus,input:focus{ border-color:var(--orchid); }
 .skyBar button{ background:none; border:0; color:var(--orchid); font:inherit; font-size:13px; padding:8px 0; min-height:44px; cursor:pointer; } #hlBar{ border:1px solid var(--c, var(--line)); border-radius:999px; padding:4px 12px; min-height:0; color:var(--ink); } #hlBar i{ font-style:normal; color:var(--mute); margin-left:8px; } #skyPlay{ margin-left:auto; }
 .ribbon{ margin-top:22px; } .ribbon p{ color:var(--mute); font-size:12px; letter-spacing:.06em; margin:0 0 8px; } .ribbon svg{ display:block; width:100%; height:auto; overflow:visible; cursor:pointer; } .ribbon text{ font-family:var(--mono); font-size:9.5px; fill:var(--mute); }
 .tray .wh{ display:block; font:italic 300 16px/1.4 var(--serif); color:var(--mute); margin-top:4px; } @keyframes whIn{ from{ opacity:0; transform:translateY(4px); } }
-.try{ margin-top:12px; color:var(--ink); } .try:first-child{ margin-top:0; } .try p{ margin:0; } .try > a{ display:inline-block; padding:12px 0 0; font-size:13px; } .try button.opt{ display:block; width:100%; margin-top:8px; padding:11px 14px; border-radius:6px; text-align:left; line-height:1.45; border-color:var(--line); } .try button.opt b{ display:block; font-weight:400; font-size:12px; letter-spacing:.06em; color:var(--orchid); }
+.try{ margin-top:12px; color:var(--ink); } .try:first-child{ margin-top:0; } .try p{ margin:0; } .try > a{ display:inline-block; padding:12px 0 0; font-size:13px; } .try div.sc{ display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; } .try div.sc button{ padding:11px 0; border-radius:6px; border-color:var(--line); } .try button.opt{ display:block; width:100%; margin-top:8px; padding:11px 14px; border-radius:6px; text-align:left; line-height:1.45; border-color:var(--line); } .try button.opt b{ display:block; font-weight:400; font-size:12px; letter-spacing:.06em; color:var(--orchid); }
 .try span{ display:block; color:var(--mute); font-size:12px; letter-spacing:.06em; margin-bottom:6px; } .try div{ display:flex; gap:8px; margin-top:12px; }
 .try button{ flex:1; padding:11px; border:1px solid var(--line); border-radius:999px; background:none; color:var(--ink); font:inherit; font-size:14px; cursor:pointer; } .try button:first-child{ border-color:var(--orchid); }
 .note a.card{ display:inline-block; margin-top:10px; color:var(--orchid); font-size:13px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
@@ -807,9 +807,11 @@ function tryPick(e){
  if (!expOn() || quietUntil() || e.e > 4) return null;
  var cut = Date.now() - 2 * 36e5; if (readLog().some(function(o){ return o.try && at(o) > cut; })) return null;
  var r; try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch(_){ r = Math.random(); }
- var pool = ARMS.filter(function(a){ return !a.old; }); pool.push(armOf('nothing'), armOf('silent'));
- var pk = pool[Math.floor(r * pool.length)]; tryPick.p = +(pool.filter(function(a){ return a === pk; }).length / pool.length).toFixed(4);
- return pk;
+ // at most three suggestion cards a day; odds: 70% a suggestion (even across them), 20% no card, 10% the nothing card
+ var td = todayStr(), shown = readLog().filter(function(o){ return o.try && dayOf(o.t) === td && o.try.a !== 'nothing' && o.try.a !== 'silent'; }).length; if (shown >= 3) return null;
+ var act = ARMS.filter(function(a){ return !a.old && a.k !== 'nothing' && a.k !== 'silent'; });
+ if (r < .2){ tryPick.p = .2; return armOf('silent'); } if (r < .3){ tryPick.p = .1; return armOf('nothing'); }
+ tryPick.p = +(.7 / act.length).toFixed(4); return act[Math.min(act.length - 1, Math.floor((r - .3) / .7 * act.length))];
 }
 function trySet(t, k, v){ var x = readLog().filter(function(o){ return o.t === t; })[0]; if (!x || !x.try) return; x.try[k] = v; if (k === 'ok' && !v) x.try.did = 0; writeLog(readLog()); markDirty(); ghPush(1); }
 // one small card pinned to the bottom of the screen: it never moves the page
@@ -829,18 +831,25 @@ function tryCard(af, e, arm){
  bs[0].addEventListener('click', pick('s')); bs[1].addEventListener('click', pick('l'));
  d.querySelector('a').addEventListener('click', function(){ trySet(e.t, 'ok', 0); done('skipped. that is fine.', 2600); });
 }
+// after any draw: one energy rating that never sets off a card, then whether the thing happened
 function paintTryAsk(){
- var log = readLog(), p = null;
- for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ var age = (Date.now() - at(e)) / 6e4; if (e.try.a !== 'nothing' && e.try.a !== 'silent' && e.try.did == null && age >= 15 && age <= 18 * 60) p = e; break; } }
+ var log = readLog(), p = null, last = false;
+ for (var i = log.length - 1; i >= 0 && i >= log.length - 6; i--){ var e = log[i]; if (e.try && armOf(e.try.a)){ p = e; last = i === log.length - 1; break; } }
  if (trayKind === 'saved') return;
- var tr = document.getElementById('tray');
- if (!p || !expOn() || askSkip === p.t){ if (trayKind === 'ask') trayHide(); return; }
- if (trayKind === 'ask' && tr.dataset.t === p.t) return;
+ var tr = document.getElementById('tray'), age = p ? (Date.now() - at(p)) / 6e4 : 0, real = p && p.try.a !== 'nothing' && p.try.a !== 'silent';
+ var needF = p && last && p.try.f == null && age >= 30 && age <= 240, needDid = real && p.try.did == null && age >= 15 && age <= 18 * 60;
+ if ((!needF && !needDid) || !expOn() || askSkip === p.t){ if (trayKind === 'ask') trayHide(); return; }
+ var key = p.t + (needF ? 'f' : 'd'); if (trayKind === 'ask' && tr.dataset.k === key) return;
  var d = document.createElement('div'), t = p.t; d.className = 'try';
- d.innerHTML = '<span>earlier</span>' + tryText(p.try) + '. did it happen?<div><button type="button">yes</button><button type="button">no</button></div>';
- var bs = d.querySelectorAll('button');
- bs[0].addEventListener('click', function(){ trySet(t, 'did', 1); trayHide(); }); bs[1].addEventListener('click', function(){ trySet(t, 'did', 0); trayHide(); });
- tr.dataset.t = t; trayShow('ask', d, 0);
+ if (needF){
+  var h = '<span>a quick follow-up</span>energy right now?<div class="sc">'; for (var v = 0; v <= 10; v++) h += '<button type="button">' + v + '</button>'; d.innerHTML = h + '</div>';
+  Array.prototype.forEach.call(d.querySelectorAll('button'), function(bt, v){ bt.addEventListener('click', function(){ trySet(t, 'f', { e:v, m:Math.round((Date.now() - at(p)) / 6e4) }); trayHide(); paintTryAsk(); }); });
+ } else {
+  d.innerHTML = '<span>earlier</span>' + tryText(p.try) + '. did it happen?<div><button type="button">yes</button><button type="button">no</button></div>';
+  var bs = d.querySelectorAll('button');
+  bs[0].addEventListener('click', function(){ trySet(t, 'did', 1); trayHide(); }); bs[1].addEventListener('click', function(){ trySet(t, 'did', 0); trayHide(); });
+ }
+ tr.dataset.t = t; tr.dataset.k = key; trayShow('ask', d, 0);
 }
 function paintExp(){ document.getElementById('expBtn').textContent = expOn() ? 'Experiment on' : 'Experiment off'; }
 document.getElementById('expBtn').addEventListener('click', function(){ store.set('en-exp', expOn() ? '0' : '1'); paintExp(); paintTryAsk(); toast(expOn() ? 'after a low check-in, one small thing at random' : 'experiment paused'); });
@@ -860,7 +869,7 @@ document.getElementById('save').addEventListener('click', function(){
  var dc = picked('drain'), ac = picked('add'), bc = picked('body');
  if (dc.length) e.drainChips = dc; if (ac.length) e.addChips = ac; if (bc.length) e.body = bc;
  var cy = cycPicked(); if (cy) e.cyc = cy;
- var wh = whisper(d), arm = tryPick(e); if (arm) e.try = { a:arm.k, p:tryPick.p, v:3 };
+ var wh = whisper(d), arm = tryPick(e); if (arm) e.try = { a:arm.k, p:tryPick.p, v:4 };
  var a = readLog(); a.push(e); writeLog(a); this.disabled = true;
  var box = document.createElement('div'), h = '<span class="ok">saved.</span>';
  if (bc.indexOf('a long breath') >= 0 && !(arm && arm.k === 'breath')) h += '<a data-go="breath">breathe?</a>';
@@ -1063,7 +1072,7 @@ function paintInsight(log){
  var turns = function(c, n, title, col, key){ var top = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; }).slice(0, 5); if (n < 2 || !top.length || c[top[0]] < 2) return;
   H.push('<h4 style="--c:' + col + '">' + title + ' <small>· ' + n + ' jumps of two or more</small></h4><div class="pls">' + top.map(function(w){ return '<button type="button" class="pl" data-k="' + key + '" data-w="' + esc(w) + '" style="--c:' + col + '">' + esc(w) + '<em>' + c[w] + '</em></button>'; }).join('') + '</div>'); };
  turns(up, nu, 'on the way up', css('--mint'), 'addChips'); turns(dn, nd, 'on the way down', css('--violet'), 'drainChips');
- var tr = {}, all = readLog(), any = 0; all.forEach(function(e, i){ if (!e.try || !armOf(e.try.a)) return; var o = tr[e.try.a] = tr[e.try.a] || { n:0, d:[] }, nx = all[i + 1]; o.n++; any++; if (nx){ var gap = (at(nx) - at(e)) / 36e5; if (gap >= .25 && gap <= 12) o.d.push(nx.e - e.e); } });
+ var tr = {}, all = readLog(), any = 0; all.forEach(function(e, i){ if (!e.try || !armOf(e.try.a)) return; var o = tr[e.try.a] = tr[e.try.a] || { n:0, d:[] }, nx = all[i + 1]; o.n++; any++; if (e.try.f && typeof e.try.f.e === 'number') o.d.push(e.try.f.e - e.e); else if (nx){ var gap = (at(nx) - at(e)) / 36e5; if (gap >= .25 && gap <= 12) o.d.push(nx.e - e.e); } });
  if (any){ var er = '<h4 style="--c:' + css('--orchid') + '">the small experiment <small>· ' + any + ' so far</small></h4>';
   var pl = { 'any suggestion':[], 'none':[] }; Object.keys(tr).forEach(function(k){ var g = k === 'nothing' || k === 'silent' ? 'none' : 'any suggestion'; pl[g] = pl[g].concat(tr[k].d); });
   var sg = function(m){ return (m >= 0 ? '+' : '−') + Math.abs(m).toFixed(1); };
@@ -1120,7 +1129,7 @@ function merge(remote){
  var loc = readLog(), seen = {}, added = 0, st = []; loc.forEach(function(e){ seen[e.t] = e; });
  (Array.isArray(remote) ? remote : []).forEach(function(e){ if (!okEntry(e)){ st.push(e); return; } var m = seen[e.t];
   if (!m){ loc.push(e); seen[e.t] = e; added++; }
-  else if (e.try && m.try && e.try.a === m.try.a){ ['ok', 'did', 'alt', 'len'].forEach(function(k){ if (m.try[k] == null && e.try[k] != null){ m.try[k] = e.try[k]; added++; } }); } });
+  else if (e.try && m.try && e.try.a === m.try.a){ ['ok', 'did', 'alt', 'len', 'f'].forEach(function(k){ if (m.try[k] == null && e.try[k] != null){ m.try[k] = e.try[k]; added++; } }); } });
  if (Array.isArray(remote)){ if (st.length) store.set('en-stray', JSON.stringify(st)); else store.del('en-stray'); }
  if (added) writeLog(loc); return added;
 }
