@@ -799,6 +799,7 @@ function trySet(t, k, v){ var x = readLog().filter(function(o){ return o.t === t
 var trayT = 0, trayKind = '', askSkip = '';
 function trayShow(kind, node, ms){ var t = document.getElementById('tray'), b = document.getElementById('trayIn'); clearTimeout(trayT); b.innerHTML = ''; b.appendChild(node); trayKind = kind; t.classList.add('show'); if (ms) trayT = setTimeout(trayHide, ms); }
 function trayHide(){ clearTimeout(trayT); trayKind = ''; document.getElementById('tray').classList.remove('show'); }
+document.getElementById('todayStrip').addEventListener('click', function(){ if (trayKind === 'saved') return; var d = document.createElement('div'); d.textContent = 'one star for each check-in today, earliest first. the colour is the energy: violet low, blue middling, green good, gold high.'; trayShow('info', d, 7000); });
 document.getElementById('trayX').addEventListener('click', function(){ if (trayKind === 'ask') askSkip = document.getElementById('tray').dataset.t || ''; trayHide(); });
 function tryText(tr){ var a = armOf(tr.a); return tr.alt && a.alt ? a.alt : a.t; }
 function tryCard(af, e, arm){
@@ -851,9 +852,8 @@ document.getElementById('save').addEventListener('click', function(){
  if (wh){ var ws = document.createElement('span'); ws.className = 'wh'; ws.textContent = wh; box.appendChild(ws); }
  var go = box.querySelector('a[data-go]'); if (go) go.addEventListener('click', function(){ trayHide(); breath.start(go.dataset.go); });
  if (arm) tryCard(box, e, arm);
- // glide to the top first, then tidy the form where the tidying cannot be seen
- var fin = function(){ field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); trayShow('saved', box, arm && arm.k !== 'nothing' ? 0 : 8000); };
- if (window.scrollY < 4) fin(); else { var t0 = performance.now(); window.scrollTo({ top:0, behavior:'smooth' }); (function w(){ if (window.scrollY < 4 || performance.now() - t0 > 1400) fin(); else requestAnimationFrame(w); })(); }
+ // nothing moves on save: open lists and folds stay as they are, only the picks clear
+ field.burst(); resetForm(); paintHead(); paintChips(); paintCyc(); paintDial(); paintSky(); trayShow('saved', box, arm && arm.k !== 'nothing' ? 0 : 8000);
  markDirty(); ghPush(1);
 });
 function resetForm(){
@@ -862,9 +862,9 @@ function resetForm(){
  document.getElementById('word').classList.remove('show'); stars.set(null);
  own = { drain:[], add:[], body:[] };
  var sv = document.getElementById('save'); sv.disabled = true; sv.textContent = 'save';
- openKinds = {}; ownOpen = {};
+ ownOpen = {};
  document.querySelectorAll('.sec .chip.on').forEach(function(x){ x.classList.remove('on'); });
- document.getElementById('cyc').open = false; document.getElementById('noteFold').open = false; document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = '';
+ document.getElementById('jot').value = ''; document.getElementById('noteState').textContent = '';
  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 
