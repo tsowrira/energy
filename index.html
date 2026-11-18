@@ -805,7 +805,7 @@ function armOf(k){ return ARMS.filter(function(a){ return a.k === k; })[0]; }
 function expOn(){ return store.get('en-exp') !== '0'; }
 function tryPick(e){
  if (!expOn() || quietUntil() || e.e > 4) return null;
- var cut = Date.now() - 4 * 36e5; if (readLog().some(function(o){ return o.try && at(o) > cut; })) return null;
+ var cut = Date.now() - 2 * 36e5; if (readLog().some(function(o){ return o.try && at(o) > cut; })) return null;
  var r; try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch(_){ r = Math.random(); }
  var pool = ARMS.filter(function(a){ return !a.old; }); pool.push(armOf('nothing'));
  return pool[Math.floor(r * pool.length)];
