@@ -583,13 +583,13 @@ function paintChips(){
   var h = show.map(function(w){ return '<span class="chip' + (on[w] ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</span>'; });
   h.push('<i class="brk"></i>');
   if (!full) h.push('<span class="chip more" data-more="1">+ ' + (list.length - 6) + ' more</span>');
-  h.push(ownOpen[kind] ? '<span class="chip own" data-own="1"><input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done"></span>' : '<span class="chip own" data-own="1">+ your own</span>');
+  h.push(ownOpen[kind] ? '<span class="chip own" data-own="1"><input type="text" placeholder="your word" autocapitalize="off" enterkeyhint="done"></span>' : '<span class="chip own" data-own="1">+ your own</span>');
   var typing = box.querySelector('.chip[data-own] input'), kept = typing ? typing.value : '';
   box.innerHTML = h.join('');
   if (ownOpen[kind]) wireOwn(kind, box, list, kept);
   Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){
    if (c.dataset.more){ openKinds[kind] = 1; paintChips(); return; }
-   if (c.dataset.own){ if (c.querySelector('input')) return; ownOpen[kind] = 1; c.innerHTML = '<input type="text" placeholder="type, then return" autocapitalize="off" enterkeyhint="done">'; wireOwn(kind, box, list); return; }
+   if (c.dataset.own){ if (c.querySelector('input')) return; ownOpen[kind] = 1; c.innerHTML = '<input type="text" placeholder="your word" autocapitalize="off" enterkeyhint="done">'; wireOwn(kind, box, list); return; }
    c.classList.toggle('on'); if (c.classList.contains('on')){ field.fx(kind); spark(c, kind); stars.nudge(kind); } if (navigator.vibrate) navigator.vibrate(3); }); });
  });
 }
