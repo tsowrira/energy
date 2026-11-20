@@ -53,7 +53,7 @@ h1{ font:italic 400 30px/1.1 var(--serif); margin:2px 0 0; letter-spacing:-.01em
 .word.show{ opacity:1; transform:none; }
 .whisper{ text-align:center; color:var(--mute); font-size:13px; letter-spacing:.06em; min-height:18px; margin:-4px 0 10px; opacity:0; transition:opacity 1.2s ease .3s; } .whisper.show{ opacity:.8; }
 
-.dots{ position:relative; height:44px; margin:4px 0 0; touch-action:none; cursor:pointer; }
+.dots{ position:relative; height:44px; margin:4px 0 0; touch-action:pan-y; cursor:pointer; }
 .dots .rail{ position:absolute; left:0; right:0; top:21px; height:2px; background:var(--line); }
 .dots .fill{ position:absolute; left:0; top:21px; height:2px; width:0; background:var(--a); transition:width .12s; }
 .dots .thumb{ position:absolute; top:6px; left:0; width:32px; height:32px; margin-left:-16px; border-radius:50%; border:2px solid var(--orchid); background:var(--bg); transition:left .12s, transform .15s; box-sizing:border-box; }
@@ -526,8 +526,11 @@ function setVal(v, quiet){
  if (!quiet && navigator.vibrate) navigator.vibrate(4);
 }
 function onPt(e){ var r = dots.getBoundingClientRect(); setVal(Math.round(10 * (e.clientX - r.left) / r.width)); }
-dots.addEventListener('pointerdown', function(e){ try { dots.setPointerCapture(e.pointerId); } catch(_){} onPt(e); });
-dots.addEventListener('pointermove', function(e){ if (e.buttons || e.pressure) onPt(e); else if (e.pointerType === 'mouse'){ var r = dots.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (e.clientX - r.left) / r.width)))); } });
+var dd = null;
+dots.addEventListener('pointerdown', function(e){ dd = { x:e.clientX, y:e.clientY, go:e.pointerType === 'mouse' }; if (dd.go){ try { dots.setPointerCapture(e.pointerId); } catch(_){} onPt(e); } });
+dots.addEventListener('pointerup', function(e){ if (dd && !dd.go && !dd.no && Math.abs(e.clientX - dd.x) < 10 && Math.abs(e.clientY - dd.y) < 10) onPt(e); dd = null; });
+dots.addEventListener('pointercancel', function(){ dd = null; });
+dots.addEventListener('pointermove', function(e){ if (dd && (e.buttons || e.pressure)){ var ax = Math.abs(e.clientX - dd.x), ay = Math.abs(e.clientY - dd.y); if (!dd.go && !dd.no){ if (ay > 8 && ay >= ax) dd.no = 1; else if (ax > 10 && ax > 1.5 * ay){ dd.go = 1; try { dots.setPointerCapture(e.pointerId); } catch(_){} } } if (dd.go) onPt(e); } else if (e.pointerType === 'mouse'){ var r = dots.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (e.clientX - r.left) / r.width)))); } });
 dots.addEventListener('pointerleave', function(){ field.set(val); });
 document.getElementById('jot').addEventListener('input', function(){ document.getElementById('noteState').textContent = this.value.trim() ? '·' : ''; });
 document.getElementById('fieldWrap').addEventListener('pointermove', function(e){ if (e.pointerType !== 'mouse' || e.buttons) return; var r = e.currentTarget.getBoundingClientRect(); field.set(Math.max(0, Math.min(10, Math.round(10 * (1 - (e.clientY - r.top) / r.height))))); });
